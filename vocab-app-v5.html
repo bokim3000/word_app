@@ -1,0 +1,1962 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>단어카드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Space+Mono:wght@400;700&display=swap');
+
+/* ════════════════════════════════════════════════════════
+   DESIGN TOKENS — 다크 / 라이트 모드
+════════════════════════════════════════════════════════ */
+:root {
+  --accent:      #7c6fff;
+  --accent2:     #ff6b9d;
+  --green:       #4ade80;
+  --red:         #f87171;
+  --yellow:      #fbbf24;
+  --radius-card: 24px;
+  --radius-btn:  16px;
+  --font-mono:   'Space Mono', monospace;
+  --font-body:   'Gowun Dodum', sans-serif;
+  --transition:  0.25s ease;
+}
+[data-theme="dark"] {
+  --bg:       #0f0f13;
+  --surface:  #1a1a24;
+  --surface2: #22223a;
+  --text:     #e8e8f0;
+  --muted:    #6b6b80;
+  --border:   rgba(124,111,255,0.15);
+  --card-f:   linear-gradient(145deg,#1e1e2e,#16162a);
+  --card-b:   linear-gradient(145deg,#12122a,#0e0e22);
+  --card-shadow: 0 30px 80px rgba(0,0,0,0.5);
+}
+[data-theme="light"] {
+  --bg:       #f4f4fa;
+  --surface:  #ffffff;
+  --surface2: #eeeef8;
+  --text:     #1a1a2e;
+  --muted:    #888899;
+  --border:   rgba(124,111,255,0.2);
+  --card-f:   linear-gradient(145deg,#ffffff,#f0f0ff);
+  --card-b:   linear-gradient(145deg,#f5f5ff,#ebebff);
+  --card-shadow: 0 20px 60px rgba(124,111,255,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  height: 100%; overflow: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: var(--font-body);
+  touch-action: none;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ════════════════════════════════════════════════════════
+   SCREEN MANAGER
+════════════════════════════════════════════════════════ */
+.screen { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+.screen.active { display: flex; flex-direction: column; }
+
+/* ════════════════════════════════════════════════════════
+   SHARED COMPONENTS
+════════════════════════════════════════════════════════ */
+.screen-header {
+  padding: 16px 20px; display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  transition: all 0.2s; flex-shrink: 0;
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(124,111,255,0.08); }
+.screen-title { font-size: 18px; flex: 1; }
+.section-label {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 3px;
+  color: var(--muted); text-transform: uppercase; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ════════════════════════════════════════════════════════
+   HOME SCREEN
+════════════════════════════════════════════════════════ */
+#screen-home { overflow-y: auto; }
+#screen-home::before {
+  content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse at 70% 20%, rgba(124,111,255,0.12) 0%, transparent 55%),
+    radial-gradient(ellipse at 10% 85%, rgba(255,107,157,0.08) 0%, transparent 50%);
+}
+.home-inner { max-width: 400px; width: 100%; margin: 0 auto; padding: 44px 22px 40px; position: relative; z-index: 1; }
+.home-topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.logo { font-family: var(--font-mono); font-size: 12px; letter-spacing: 4px; color: var(--accent); opacity: 0.8; }
+.topbar-btns { display: flex; gap: 8px; }
+.theme-btn, .stats-nav-btn {
+  width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.theme-btn:hover, .stats-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.home-title { font-size: 28px; line-height: 1.25; margin-bottom: 4px; }
+.home-sub   { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+
+.category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.cat-card {
+  border-radius: 16px; padding: 16px; cursor: pointer;
+  border: 1.5px solid var(--border); background: var(--surface);
+  transition: all 0.2s; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; gap: 5px;
+}
+.cat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+.cat-card::before { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:0.08; }
+.cat-card[data-color="purple"]::before { background:#7c6fff; }
+.cat-card[data-color="orange"]::before { background:#f97316; }
+.cat-card[data-color="blue"]::before   { background:#38bdf8; }
+.cat-card[data-color="green"]::before  { background:#4ade80; }
+.cat-card[data-color="pink"]::before   { background:#f472b6; }
+.cat-icon  { font-size: 22px; }
+.cat-name  { font-size: 14px; }
+.cat-meta  { display: flex; gap: 6px; align-items: center; }
+.cat-count { font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+.cat-mastered { font-family: var(--font-mono); font-size: 10px; color: var(--green); }
+
+.all-btn {
+  width: 100%; height: 50px; border-radius: var(--radius-btn);
+  background: linear-gradient(135deg, var(--accent), #5a4fff);
+  border: none; color: white; font-family: var(--font-body); font-size: 15px;
+  cursor: pointer; transition: all 0.2s; margin-bottom: 28px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.all-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,111,255,0.35); }
+
+.my-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.my-deck-card {
+  border-radius: 14px; padding: 13px 16px; border: 1.5px solid var(--border);
+  background: var(--surface); display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: all 0.2s;
+}
+.my-deck-card:hover { border-color: var(--yellow); }
+.my-deck-left { display: flex; align-items: center; gap: 12px; }
+.my-deck-icon { font-size: 20px; }
+.my-deck-name  { font-size: 14px; }
+.my-deck-count { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+.my-deck-del {
+  width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgba(248,113,113,0.3);
+  background: transparent; color: var(--red); font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
+}
+.my-deck-del:hover { background: rgba(248,113,113,0.15); }
+.empty-my {
+  text-align: center; padding: 22px; border: 1.5px dashed var(--border);
+  border-radius: 14px; color: var(--muted); font-size: 13px; line-height: 1.8;
+}
+.empty-my span { color: var(--accent); }
+.add-btn {
+  width: 100%; height: 46px; border-radius: var(--radius-btn);
+  border: 1.5px dashed rgba(251,191,36,0.4); background: rgba(251,191,36,0.04);
+  color: var(--yellow); font-family: var(--font-body); font-size: 14px;
+  cursor: pointer; transition: all 0.2s; position: relative;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.add-btn input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.add-btn:hover { background: rgba(251,191,36,0.1); border-color: var(--yellow); }
+
+/* ════════════════════════════════════════════════════════
+   STUDY SCREEN
+════════════════════════════════════════════════════════ */
+#screen-study { background: var(--bg); }
+.study-header {
+  padding: 14px 20px 10px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.back-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 18px; transition: all 0.2s;
+}
+.back-btn:hover { border-color: var(--accent); color: var(--accent); }
+.progress-info { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.progress-info span { color: var(--text); }
+.stats-row { display: flex; gap: 6px; }
+.stat-chip { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 20px; display: flex; align-items: center; gap: 4px; }
+.stat-chip.known   { background: rgba(74,222,128,0.12);  color: var(--green);  }
+.stat-chip.unknown { background: rgba(248,113,113,0.12); color: var(--red);    }
+.progress-bar-wrap { padding: 0 20px 14px; flex-shrink: 0; }
+.progress-bar { height: 3px; background: rgba(128,128,128,0.15); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; transition: width 0.4s ease; }
+
+/* ── card arena ── */
+.card-arena {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden; padding: 16px;
+}
+.swipe-hint {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 11px; font-family: var(--font-mono); letter-spacing: 1px;
+  opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+}
+.swipe-hint.left  { left: 14px;  color: var(--green); }
+.swipe-hint.right { right: 14px; color: var(--red);   }
+.swipe-hint .hint-icon { font-size: 26px; }
+
+/* ── THE CARD ── */
+.card-wrapper {
+  width: min(340px, 92vw); height: min(460px, 68vh);
+  perspective: 1200px; position: relative; cursor: pointer; user-select: none;
+  animation: cardIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.card-inner {
+  width: 100%; height: 100%; position: relative; transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4,0,0.2,1); will-change: transform;
+}
+.card-inner.flipped { transform: rotateY(180deg); }
+.card-face {
+  position: absolute; inset: 0; border-radius: var(--radius-card);
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 28px; border: 1px solid var(--border); overflow: hidden;
+}
+.card-front { background: var(--card-f); box-shadow: var(--card-shadow), 0 0 0 1px rgba(124,111,255,0.1); }
+.card-back  { background: var(--card-b); box-shadow: var(--card-shadow), 0 0 0 1px rgba(255,107,157,0.1); transform: rotateY(180deg); }
+.card-face::before {
+  content:''; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%;
+  background: radial-gradient(circle, rgba(124,111,255,0.08) 0%, transparent 70%);
+}
+.card-back::before { background: radial-gradient(circle, rgba(255,107,157,0.08) 0%, transparent 70%); }
+
+.card-badge { position:absolute; top:18px; right:18px; font-family:var(--font-mono); font-size:10px; letter-spacing:2px; color:rgba(124,111,255,0.5); }
+.card-back .card-badge { color:rgba(255,107,157,0.5); }
+
+.penalty-badge {
+  position:absolute; top:18px; left:18px;
+  background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.25);
+  border-radius:8px; padding:3px 8px; font-family:var(--font-mono); font-size:10px; color:var(--red);
+}
+/* 연속 정답 진행 표시 */
+.streak-bar {
+  position: absolute; bottom: 18px; left: 28px; right: 28px;
+  display: flex; gap: 6px; justify-content: center;
+}
+.streak-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: rgba(74,222,128,0.2); border: 1px solid rgba(74,222,128,0.3);
+  transition: all 0.3s;
+}
+.streak-dot.filled { background: var(--green); border-color: var(--green); box-shadow: 0 0 6px rgba(74,222,128,0.5); }
+
+/* TTS 버튼 */
+.tts-btn {
+  position: absolute; bottom: 18px; right: 18px;
+  width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.tts-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tts-btn.speaking { color: var(--accent); border-color: var(--accent); animation: pulse 1s infinite; }
+
+.card-word    { font-size: clamp(20px,6vw,36px); text-align:center; letter-spacing:-0.5px; line-height:1.3; }
+.card-phonetic { margin-top: 6px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); text-align: center; letter-spacing: 1px; }
+.card-tap-hint { position:absolute; bottom:52px; font-size:12px; color:var(--muted); opacity:0.55; }
+.card-meaning { font-size: clamp(18px,5.5vw,28px); text-align:center; line-height:1.4; }
+.card-example {
+  margin-top:16px; font-size:12px; color:var(--muted); text-align:center;
+  line-height:1.6; font-style:italic; padding:10px 14px;
+  background: rgba(128,128,128,0.06); border-radius:10px; width:100%;
+}
+.swipe-overlay {
+  position:absolute; inset:0; border-radius:var(--radius-card); opacity:0; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; font-size:48px;
+}
+.left-overlay  { background: rgba(74,222,128,0.18); }
+.right-overlay { background: rgba(248,113,113,0.18); }
+
+/* ── action row ── */
+.swipe-instruction { text-align:center; font-size:11px; color:var(--muted); padding-bottom:10px; flex-shrink:0; font-family:var(--font-mono); letter-spacing:0.5px; }
+.action-row { padding:12px 20px 28px; display:flex; gap:14px; justify-content:center; flex-shrink:0; }
+.action-btn {
+  flex:1; max-width:160px; height:54px; border-radius:var(--radius-btn);
+  border:1.5px solid; background:transparent; cursor:pointer;
+  font-family:var(--font-body); font-size:15px;
+  display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;
+}
+.action-btn.known-btn   { border-color:rgba(74,222,128,0.4);  color:var(--green); }
+.action-btn.unknown-btn { border-color:rgba(248,113,113,0.4); color:var(--red);   }
+.action-btn.known-btn:active,   .action-btn.known-btn:hover   { background:rgba(74,222,128,0.12);  transform:translateY(-2px); }
+.action-btn.unknown-btn:active, .action-btn.unknown-btn:hover { background:rgba(248,113,113,0.12); transform:translateY(-2px); }
+
+/* ════════════════════════════════════════════════════════
+   DONE SCREEN
+════════════════════════════════════════════════════════ */
+#screen-done {
+  align-items:center; justify-content:center;
+  background: radial-gradient(ellipse at 50% 40%, rgba(74,222,128,0.1) 0%, transparent 60%), var(--bg);
+}
+.done-box    { text-align:center; padding:36px 28px; max-width:320px; width:90%; }
+.done-icon   { font-size:60px; margin-bottom:20px; }
+.done-title  { font-size:26px; margin-bottom:6px; }
+.done-sub    { font-size:13px; color:var(--muted); margin-bottom:28px; line-height:1.6; }
+.done-stats  { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:28px; }
+.done-stat   { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 10px; }
+.done-stat-num   { font-family:var(--font-mono); font-size:24px; font-weight:700; margin-bottom:4px; }
+.done-stat-num.green  { color:var(--green);  }
+.done-stat-num.red    { color:var(--red);    }
+.done-stat-num.yellow { color:var(--yellow); }
+.done-stat-label { font-size:11px; color:var(--muted); }
+.done-btn {
+  width:100%; height:50px; border-radius:14px; border:none; color:white;
+  font-family:var(--font-body); font-size:15px; cursor:pointer; transition:all 0.2s; margin-bottom:10px;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.done-btn.primary { background: linear-gradient(135deg,var(--accent),#5a4fff); }
+.done-btn.primary:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(124,111,255,0.35); }
+.done-btn.secondary { background:var(--surface); border:1.5px solid var(--border); color:var(--muted); }
+.done-btn.secondary:hover { border-color:var(--accent); color:var(--accent); }
+
+/* ════════════════════════════════════════════════════════
+   STATS SCREEN
+════════════════════════════════════════════════════════ */
+#screen-stats { background: var(--bg); overflow-y: auto; }
+.stats-body { padding: 20px; max-width: 400px; margin: 0 auto; }
+.stats-summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+.summary-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 16px 12px; text-align: center;
+}
+.summary-num   { font-family: var(--font-mono); font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+.summary-label { font-size: 11px; color: var(--muted); }
+.summary-num.accent { color: var(--accent); }
+.summary-num.green  { color: var(--green);  }
+.summary-num.red    { color: var(--red);    }
+
+/* 카테고리별 진행도 */
+.cat-progress-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.cat-progress-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
+.cat-progress-top  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.cat-progress-name { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.cat-progress-pct  { font-family: var(--font-mono); font-size: 12px; color: var(--accent); }
+.cat-bar           { height: 6px; background: rgba(128,128,128,0.15); border-radius: 3px; overflow: hidden; }
+.cat-bar-fill      { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.6s ease; }
+
+/* 최근 학습 기록 */
+.session-list { display: flex; flex-direction: column; gap: 8px; }
+.session-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+}
+.session-date  { font-size: 13px; }
+.session-score { font-family: var(--font-mono); font-size: 12px; }
+.session-score.good { color: var(--green); }
+.session-score.mid  { color: var(--yellow); }
+.session-score.low  { color: var(--red); }
+
+/* ════════════════════════════════════════════════════════
+   MASTERED WORDS SCREEN
+════════════════════════════════════════════════════════ */
+#screen-mastered { background: var(--bg); overflow-y: auto; }
+.mastered-body { padding: 20px; max-width: 400px; margin: 0 auto; }
+.mastered-empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.mastered-empty .big { font-size: 48px; margin-bottom: 16px; }
+.word-list { display: flex; flex-direction: column; gap: 8px; }
+.word-item {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 14px 16px; display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer; transition: all 0.2s;
+}
+.word-item:hover { border-color: var(--accent); }
+.word-item-left .word-en  { font-size: 15px; margin-bottom: 3px; }
+.word-item-left .word-ko  { font-size: 13px; color: var(--muted); }
+.word-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.mastered-badge { font-family: var(--font-mono); font-size: 10px; color: var(--green); background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); border-radius: 6px; padding: 2px 8px; }
+.miss-badge     { font-family: var(--font-mono); font-size: 10px; color: var(--red);   background: rgba(248,113,113,0.1);  border: 1px solid rgba(248,113,113,0.2);  border-radius: 6px; padding: 2px 8px; }
+
+/* word detail modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; }
+.modal-overlay.hidden { display: none; }
+.modal-sheet {
+  background: var(--surface); border-radius: 24px 24px 0 0; padding: 28px 24px 40px;
+  width: 100%; max-width: 500px; margin: 0 auto;
+  animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.modal-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.modal-word { font-size: 28px; margin-bottom: 4px; }
+.modal-phonetic { font-family: var(--font-mono); font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.modal-meaning { font-size: 18px; color: var(--accent); margin-bottom: 12px; }
+.modal-example { font-size: 13px; color: var(--muted); line-height: 1.6; font-style: italic; }
+.modal-tts-btn {
+  margin-top: 16px; padding: 10px 20px; border-radius: 12px; border: 1px solid var(--border);
+  background: transparent; color: var(--accent); font-family: var(--font-body); font-size: 14px;
+  cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+}
+.modal-tts-btn:hover { background: rgba(124,111,255,0.1); }
+
+/* ════════════════════════════════════════════════════════
+   TOAST & ANIMATIONS
+════════════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 90px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 10px 20px; font-size: 14px;
+  opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 100; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@keyframes cardIn    { from { opacity:0; transform:scale(0.9) translateY(20px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes swipeLeft { to { transform:translateX(-130%) rotate(-20deg); opacity:0; } }
+@keyframes swipeRight{ to { transform:translateX( 130%) rotate( 20deg); opacity:0; } }
+@keyframes slideUp   { from { transform:translateY(100%); } to { transform:translateY(0); } }
+@keyframes pulse     { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+.animate-left  { animation: swipeLeft  0.35s ease-in forwards; }
+.animate-right { animation: swipeRight 0.35s ease-in forwards; }
+</style>
+</head>
+<body>
+
+<!-- ══ HOME ══ -->
+<div id="screen-home" class="screen active">
+  <div class="home-inner">
+    <div class="home-topbar">
+      <div class="logo">WordCard</div>
+      <div class="topbar-btns">
+        <button class="stats-nav-btn" id="statsNavBtn" title="학습 통계">📊</button>
+        <button class="theme-btn" id="themeBtn" title="테마 전환">🌙</button>
+      </div>
+    </div>
+    <h1 class="home-title">오늘도<br>단어 정복!</h1>
+    <p class="home-sub">공부할 카테고리를 선택하세요</p>
+    <div class="section-label">기본 제공</div>
+    <div class="category-grid" id="builtinGrid"></div>
+    <button class="all-btn" id="allBuiltinBtn">✦ 전체 850개 한번에 학습</button>
+    <div class="section-label">내 단어장</div>
+    <div class="my-list" id="myDeckList"></div>
+    <label class="add-btn">
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+      ＋ 엑셀 파일 추가
+    </label>
+  </div>
+</div>
+
+<!-- ══ STUDY ══ -->
+<div id="screen-study" class="screen">
+  <div class="study-header">
+    <div class="header-left">
+      <button class="back-btn" id="backBtn">←</button>
+      <div class="progress-info"><span id="cardIndex">1</span> / <span id="cardTotal">0</span></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-chip known">✓ <span id="knownCount">0</span></div>
+      <div class="stat-chip unknown">✗ <span id="unknownCount">0</span></div>
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
+  </div>
+  <div class="card-arena" id="cardArena">
+    <div class="swipe-hint left"  id="hintLeft"> <div class="hint-icon">✓</div>알아요</div>
+    <div class="swipe-hint right" id="hintRight"><div class="hint-icon">✗</div>몰라요</div>
+  </div>
+  <div class="swipe-instruction">← 알아요 &nbsp;|&nbsp; 탭: 뒤집기 &nbsp;|&nbsp; 몰라요 →</div>
+  <div class="action-row">
+    <button class="action-btn known-btn"   id="knownBtn">← 알아요 ✓</button>
+    <button class="action-btn unknown-btn" id="unknownBtn">몰라요 ✗ →</button>
+  </div>
+</div>
+
+<!-- ══ DONE ══ -->
+<div id="screen-done" class="screen">
+  <div class="done-box">
+    <div class="done-icon">🎉</div>
+    <h2 class="done-title">한 바퀴 완료!</h2>
+    <p class="done-sub" id="doneMessage"></p>
+    <div class="done-stats">
+      <div class="done-stat"><div class="done-stat-num green"  id="doneKnown">0</div><div class="done-stat-label">알았어요</div></div>
+      <div class="done-stat"><div class="done-stat-num red"    id="doneUnknown">0</div><div class="done-stat-label">몰랐어요</div></div>
+      <div class="done-stat"><div class="done-stat-num yellow" id="doneMastered">0</div><div class="done-stat-label">완전 마스터</div></div>
+    </div>
+    <button class="done-btn primary"   id="restartBtn">모르는 단어 다시 학습</button>
+    <button class="done-btn secondary" id="masteredListBtn">🏆 완료 단어 보기</button>
+    <button class="done-btn secondary" id="homeBtn">홈으로</button>
+  </div>
+</div>
+
+<!-- ══ STATS ══ -->
+<div id="screen-stats" class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" id="statsBackBtn">←</button>
+    <div class="screen-title">📊 학습 통계</div>
+  </div>
+  <div class="stats-body">
+    <div class="stats-summary" id="statsSummary"></div>
+    <div class="section-label">카테고리별 진행도</div>
+    <div class="cat-progress-list" id="catProgressList"></div>
+    <div class="section-label">최근 학습 기록</div>
+    <div class="session-list" id="sessionList"></div>
+  </div>
+</div>
+
+<!-- ══ MASTERED WORDS ══ -->
+<div id="screen-mastered" class="screen">
+  <div class="screen-header">
+    <button class="icon-btn" id="masteredBackBtn">←</button>
+    <div class="screen-title">🏆 완료 단어 목록</div>
+    <button class="icon-btn" id="masteredTtsAllBtn" title="전체 듣기">🔊</button>
+  </div>
+  <div class="mastered-body">
+    <div id="masteredContent"></div>
+  </div>
+</div>
+
+<!-- ══ WORD DETAIL MODAL ══ -->
+<div class="modal-overlay hidden" id="wordModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-word"     id="modalWord"></div>
+    <div class="modal-phonetic" id="modalPhonetic"></div>
+    <div class="modal-meaning"  id="modalMeaning"></div>
+    <div class="modal-example"  id="modalExample"></div>
+    <button class="modal-tts-btn" id="modalTtsBtn">🔊 발음 듣기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   MODULE: BuiltinData
+   단어 추가: 해당 카테고리 words 배열에 항목 추가
+════════════════════════════════════════════════════════ */
+const BuiltinData = (() => {
+  const categories = [
+    {
+      id:'smalltalk', name:'스몰토크', icon:'💬', color:'purple',
+      words:[
+        {word:"Nice to meet you.",              phonetic:"/naɪs tə miːt juː/",           meaning:"만나서 반갑습니다.",          example:"Nice to meet you! I've heard a lot about you."},
+        {word:"How are you doing?",             phonetic:"/haʊ ɑːr juː ˈduːɪŋ/",         meaning:"어떻게 지내세요?",             example:"Hey, how are you doing these days?"},
+        {word:"I'm doing well, thanks.",        phonetic:"/aɪm ˈduːɪŋ wɛl θæŋks/",       meaning:"잘 지내고 있어요, 감사해요.",   example:"I'm doing well, thanks. And you?"},
+        {word:"What do you do for a living?",  phonetic:"/wɒt duː juː duː fər ə ˈlɪvɪŋ/",meaning:"어떤 일 하세요?",             example:"So, what do you do for a living?"},
+        {word:"Where are you from?",           phonetic:"/wɛr ɑːr juː frɒm/",            meaning:"어디서 오셨어요?",             example:"Where are you from originally?"},
+        {word:"How long have you been here?",  phonetic:"/haʊ lɒŋ həv juː bɪn hɪər/",   meaning:"여기 오신 지 얼마나 됐어요?",  example:"How long have you been here in New York?"},
+        {word:"What brings you here?",         phonetic:"/wɒt brɪŋz juː hɪər/",          meaning:"여기는 어쩐 일로 오셨어요?",   example:"What brings you here today?"},
+        {word:"The weather is lovely today.",  phonetic:"/ðə ˈwɛðər ɪz ˈlʌvli təˈdeɪ/", meaning:"오늘 날씨 정말 좋네요.",       example:"The weather is lovely today, isn't it?"},
+        {word:"Do you have any plans this weekend?", phonetic:"/duː juː hæv ˈɛni plænz/", meaning:"이번 주말에 계획 있으세요?",   example:"Do you have any plans this weekend?"},
+        {word:"That sounds great!",            phonetic:"/ðæt saʊndz ɡreɪt/",            meaning:"좋겠네요!",                   example:"Oh, that sounds great! You'll love it."},
+        {word:"I totally agree.",              phonetic:"/aɪ ˈtoʊtəli əˈɡriː/",          meaning:"완전히 동의해요.",             example:"I totally agree with what you just said."},
+        {word:"Really? That's interesting.",   phonetic:"/ˈrɪəli ðæts ˈɪntrəstɪŋ/",     meaning:"정말요? 흥미롭네요.",          example:"Really? That's interesting. Tell me more."},
+        {word:"It was nice talking to you.",   phonetic:"/ɪt wɒz naɪs ˈtɔːkɪŋ tə juː/", meaning:"얘기 나눠서 좋았어요.",        example:"It was nice talking to you. See you around!"},
+        {word:"Let's keep in touch.",          phonetic:"/lɛts kiːp ɪn tʌtʃ/",           meaning:"연락하고 지내요.",             example:"Let's keep in touch! Here's my card."},
+        {word:"Do you come here often?",       phonetic:"/duː juː kʌm hɪər ˈɒfən/",      meaning:"여기 자주 오세요?",            example:"Do you come here often? I've never seen you here."},
+        {word:"Could you say that again?",     phonetic:"/kʊd juː seɪ ðæt əˈɡɛn/",       meaning:"다시 한번 말씀해 주시겠어요?", example:"Sorry, could you say that again more slowly?"},
+        {word:"I didn't catch that.",          phonetic:"/aɪ ˈdɪdənt kætʃ ðæt/",         meaning:"잘 못 들었어요.",              example:"I didn't catch that. Could you repeat it?"},
+        {word:"No worries at all.",            phonetic:"/noʊ ˈwʌriz æt ɔːl/",           meaning:"전혀 괜찮아요.",               example:"No worries at all! Take your time."},
+        {word:"It was a pleasure.",            phonetic:"/ɪt wɒz ə ˈplɛʒər/",            meaning:"만나서 영광이었어요.",          example:"It was a pleasure meeting you today."},
+        {word:"See you next time!",            phonetic:"/siː juː nɛkst taɪm/",           meaning:"다음에 봐요!",                 example:"See you next time! Have a great day."},
+        {word:"I'm a bit jet-lagged.",         phonetic:"/aɪm ə bɪt ˈdʒɛtlæɡd/",        meaning:"시차 적응이 안 됐어요.",        example:"Sorry if I seem tired — I'm a bit jet-lagged."},
+        {word:"I'm still learning English.",   phonetic:"/aɪm stɪl ˈlɜːrnɪŋ ˈɪŋɡlɪʃ/", meaning:"아직 영어 배우는 중이에요.",   example:"Please be patient — I'm still learning English."},
+        {word:"I hadn't thought of that.",     phonetic:"/aɪ ˈhædənt θɔːt əv ðæt/",     meaning:"그건 생각 못 했네요.",          example:"I hadn't thought of that before. Good point."},
+        {word:"Excuse me, I have to go.",      phonetic:"/ɪkˈskjuːz miː aɪ hæv tə ɡoʊ/",meaning:"실례지만 가봐야 할 것 같아요.", example:"Excuse me, I have to go catch my train."},
+        {word:"What do you recommend?",        phonetic:"/wɒt duː juː ˌrɛkəˈmɛnd/",      meaning:"뭘 추천하시겠어요?",           example:"What do you recommend around here?"},
+        {word:"I work in IT.",                 phonetic:"/aɪ wɜːrk ɪn aɪ tiː/",          meaning:"IT 분야에서 일해요.",           example:"I work in IT, mostly software development."},
+        {word:"I'm from Korea.",               phonetic:"/aɪm frɒm kəˈrɪə/",             meaning:"저는 한국에서 왔어요.",         example:"I'm from Korea, from Seoul specifically."},
+        {word:"I'm just going to relax.",      phonetic:"/aɪm dʒʌst ˈɡoʊɪŋ tə rɪˈlæks/",meaning:"그냥 쉬려고요.",               example:"I'm just going to relax at home this weekend."},
+        {word:"Have you been here before?",    phonetic:"/hæv juː bɪn hɪər bɪˈfɔːr/",   meaning:"여기 전에 와보신 적 있어요?",  example:"Have you been to this restaurant before?"},
+        {word:"It's been raining a lot lately.",phonetic:"/ɪts bɪn ˈreɪnɪŋ ə lɒt ˈleɪtli/",meaning:"요즘 비가 많이 오네요.",    example:"It's been raining a lot lately. I hope it clears up."},
+      ]
+    },
+    {
+      id:'restaurant', name:'식당·카페', icon:'☕', color:'orange',
+      words:[
+        {word:"A table for two, please.",          phonetic:"/ə ˈteɪbəl fər tuː pliːz/",           meaning:"두 명 자리 부탁드려요.",       example:"Hi, a table for two, please."},
+        {word:"Can I see the menu, please?",       phonetic:"/kæn aɪ siː ðə ˈmɛnjuː pliːz/",      meaning:"메뉴판 볼 수 있을까요?",       example:"Excuse me, can I see the menu, please?"},
+        {word:"What do you recommend?",            phonetic:"/wɒt duː juː ˌrɛkəˈmɛnd/",            meaning:"뭘 추천하시나요?",             example:"What do you recommend from today's specials?"},
+        {word:"I'll have the steak, please.",      phonetic:"/aɪl hæv ðə steɪk pliːz/",           meaning:"스테이크로 할게요.",            example:"I'll have the steak, please. Medium rare."},
+        {word:"Medium rare, please.",              phonetic:"/ˈmiːdiəm rɛr pliːz/",                meaning:"미디엄 레어로 부탁해요.",       example:"Medium rare, please — just a little pink inside."},
+        {word:"Can I substitute the fries?",       phonetic:"/kæn aɪ ˈsʌbstɪtjuːt ðə fraɪz/",    meaning:"감자튀김을 바꿀 수 있나요?",   example:"Can I substitute the fries for a salad?"},
+        {word:"I'm allergic to nuts.",             phonetic:"/aɪm əˈlɜːrdʒɪk tə nʌts/",           meaning:"견과류 알레르기가 있어요.",     example:"I'm allergic to nuts — please be careful."},
+        {word:"Is this dish spicy?",               phonetic:"/ɪz ðɪs dɪʃ ˈspaɪsi/",               meaning:"이 요리 맵나요?",              example:"Is this dish spicy? I can't handle too much heat."},
+        {word:"Can I get that to go?",             phonetic:"/kæn aɪ ɡɛt ðæt tə ɡoʊ/",            meaning:"포장해 주실 수 있나요?",       example:"Actually, can I get that to go? I'm in a rush."},
+        {word:"We're ready to order.",             phonetic:"/wɪər ˈrɛdi tə ˈɔːrdər/",            meaning:"주문할게요.",                  example:"Excuse me, we're ready to order now."},
+        {word:"Can I get a refill?",               phonetic:"/kæn aɪ ɡɛt ə ˈriːfɪl/",             meaning:"리필 되나요?",                 example:"Can I get a refill on the coffee, please?"},
+        {word:"This is not what I ordered.",       phonetic:"/ðɪs ɪz nɒt wɒt aɪ ˈɔːrdərd/",      meaning:"제가 주문한 게 아닌 것 같아요.",example:"Sorry, but this is not what I ordered."},
+        {word:"Could I get the check, please?",    phonetic:"/kʊd aɪ ɡɛt ðə tʃɛk pliːz/",        meaning:"계산서 주시겠어요?",           example:"Could I get the check, please? We're in a hurry."},
+        {word:"Can we split the bill?",            phonetic:"/kæn wiː splɪt ðə bɪl/",             meaning:"더치페이 할 수 있나요?",       example:"Can we split the bill between the two of us?"},
+        {word:"Do you accept credit cards?",       phonetic:"/duː juː əkˈsɛpt ˈkrɛdɪt kɑːrdz/",  meaning:"신용카드 되나요?",             example:"Do you accept credit cards or is it cash only?"},
+        {word:"Keep the change.",                  phonetic:"/kiːp ðə tʃeɪndʒ/",                  meaning:"거스름돈은 됐어요.",            example:"Keep the change — great service tonight!"},
+        {word:"It was delicious!",                 phonetic:"/ɪt wɒz dɪˈlɪʃəs/",                  meaning:"정말 맛있었어요!",             example:"Everything was wonderful. It was delicious!"},
+        {word:"One americano, please.",            phonetic:"/wʌn əˌmɛrɪˈkɑːnoʊ pliːz/",          meaning:"아메리카노 하나 주세요.",       example:"One americano, please. To stay."},
+        {word:"Can I get that iced?",              phonetic:"/kæn aɪ ɡɛt ðæt aɪst/",              meaning:"아이스로 할 수 있나요?",       example:"Can I get that iced instead of hot?"},
+        {word:"Do you have oat milk?",             phonetic:"/duː juː hæv oʊt mɪlk/",              meaning:"귀리 우유 있나요?",            example:"Do you have oat milk as an option?"},
+        {word:"Is there Wi-Fi here?",              phonetic:"/ɪz ðɛr ˈwaɪfaɪ hɪər/",              meaning:"여기 와이파이 있나요?",         example:"Is there Wi-Fi here? What's the password?"},
+        {word:"Can I sit here?",                   phonetic:"/kæn aɪ sɪt hɪər/",                  meaning:"여기 앉아도 될까요?",           example:"Excuse me, can I sit here? Is this seat taken?"},
+        {word:"How long is the wait?",             phonetic:"/haʊ lɒŋ ɪz ðə weɪt/",               meaning:"얼마나 기다려야 해요?",         example:"How long is the wait for a table?"},
+        {word:"I have a reservation under Kim.",   phonetic:"/aɪ hæv ə ˌrɛzərˈveɪʃən ˈʌndər kɪm/",meaning:"김으로 예약했어요.",           example:"Yes, I have a reservation under Kim, for 7pm."},
+        {word:"I'd like a window seat.",           phonetic:"/aɪd laɪk ə ˈwɪndoʊ siːt/",          meaning:"창가 자리로 부탁해요.",         example:"If possible, I'd like a window seat."},
+        {word:"What size would you like?",         phonetic:"/wɒt saɪz wʊd juː laɪk/",             meaning:"사이즈는 어떻게 할까요?",      example:"What size would you like — small, medium, or large?"},
+        {word:"How would you like it cooked?",     phonetic:"/haʊ wʊd juː laɪk ɪt kʊkt/",         meaning:"어떻게 익혀 드릴까요?",         example:"How would you like your steak cooked?"},
+        {word:"We're celebrating tonight.",        phonetic:"/wɪər ˈsɛlɪbreɪtɪŋ təˈnaɪt/",        meaning:"오늘 기념일이에요.",            example:"We're celebrating tonight — our anniversary!"},
+        {word:"Compliments to the chef!",          phonetic:"/ˈkɒmplɪmənts tə ðə ʃɛf/",           meaning:"셰프에게 칭찬 전해주세요!",    example:"Please pass this on — compliments to the chef!"},
+        {word:"Do you have a reservation?",        phonetic:"/duː juː hæv ə ˌrɛzərˈveɪʃən/",      meaning:"예약하셨나요?",                example:"Do you have a reservation under your name?"},
+      ]
+    },
+    {
+      id:'hotel', name:'호텔', icon:'🏨', color:'blue',
+      words:[
+        {word:"I have a reservation.",             phonetic:"/aɪ hæv ə ˌrɛzərˈveɪʃən/",           meaning:"예약이 있어요.",               example:"Hi, I have a reservation under the name Kim."},
+        {word:"Check-in, please.",                 phonetic:"/tʃɛk ɪn pliːz/",                    meaning:"체크인 하려고요.",              example:"Check-in, please. I booked a deluxe room."},
+        {word:"What time is check-out?",           phonetic:"/wɒt taɪm ɪz tʃɛk aʊt/",             meaning:"체크아웃은 몇 시예요?",         example:"What time is check-out tomorrow?"},
+        {word:"Can I have a late check-out?",      phonetic:"/kæn aɪ hæv ə leɪt tʃɛk aʊt/",      meaning:"늦은 체크아웃 가능한가요?",     example:"Can I have a late check-out until 2pm?"},
+        {word:"I'd like a room with a view.",      phonetic:"/aɪd laɪk ə ruːm wɪð ə vjuː/",       meaning:"전망 좋은 방 원해요.",          example:"If available, I'd like a room with a view."},
+        {word:"Can I get an extra pillow?",        phonetic:"/kæn aɪ ɡɛt ən ˈɛkstrə ˈpɪloʊ/",    meaning:"베개 하나 더 받을 수 있나요?",  example:"Can I get an extra pillow and blanket, please?"},
+        {word:"The air conditioning isn't working.",phonetic:"/ðə ɛr kənˈdɪʃənɪŋ ɪzənt ˈwɜːrkɪŋ/",meaning:"에어컨이 작동이 안 돼요.",     example:"Hello, the air conditioning isn't working."},
+        {word:"There's no hot water.",             phonetic:"/ðɛrz noʊ hɒt ˈwɔːtər/",             meaning:"온수가 안 나와요.",             example:"Hi, there's no hot water in my bathroom."},
+        {word:"Can you call a taxi for me?",       phonetic:"/kæn juː kɔːl ə ˈtæksi fər miː/",    meaning:"택시 불러 주시겠어요?",         example:"Could you call a taxi for me? I need to be at the airport by 6."},
+        {word:"Is breakfast included?",            phonetic:"/ɪz ˈbrɛkfəst ɪnˈkluːdɪd/",          meaning:"조식 포함인가요?",             example:"Is breakfast included in the room rate?"},
+        {word:"Can I store my luggage?",           phonetic:"/kæn aɪ stɔːr maɪ ˈlʌɡɪdʒ/",         meaning:"짐을 맡길 수 있나요?",          example:"Can I store my luggage here until my room is ready?"},
+        {word:"Do you have a gym?",                phonetic:"/duː juː hæv ə dʒɪm/",                meaning:"헬스장 있나요?",               example:"Do you have a gym or fitness center on site?"},
+        {word:"Can I get a wake-up call?",         phonetic:"/kæn aɪ ɡɛt ə weɪk ʌp kɔːl/",       meaning:"모닝콜 해주실 수 있나요?",      example:"Can I get a wake-up call at 6am tomorrow?"},
+        {word:"I'd like to extend my stay.",       phonetic:"/aɪd laɪk tə ɪkˈstɛnd maɪ steɪ/",   meaning:"숙박을 연장하고 싶어요.",       example:"I'd like to extend my stay by one more night."},
+        {word:"The room is too noisy.",            phonetic:"/ðə ruːm ɪz tuː ˈnɔɪzi/",             meaning:"방이 너무 시끄러워요.",          example:"Excuse me, the room is too noisy. Can I switch?"},
+        {word:"Can I upgrade my room?",            phonetic:"/kæn aɪ ˈʌpɡreɪd maɪ ruːm/",         meaning:"방 업그레이드 가능한가요?",     example:"Is it possible to upgrade my room to a suite?"},
+        {word:"My key card isn't working.",        phonetic:"/maɪ kiː kɑːrd ɪzənt ˈwɜːrkɪŋ/",     meaning:"키카드가 작동을 안 해요.",      example:"My key card isn't working — can I get a new one?"},
+        {word:"Is there a safe in the room?",      phonetic:"/ɪz ðɛr ə seɪf ɪn ðə ruːm/",         meaning:"방에 금고 있나요?",             example:"Is there a safe in the room for valuables?"},
+        {word:"Do you have room service?",         phonetic:"/duː juː hæv ruːm ˈsɜːrvɪs/",         meaning:"룸서비스 되나요?",             example:"Do you have room service? Until what time?"},
+        {word:"I need more towels.",               phonetic:"/aɪ niːd mɔːr ˈtaʊəlz/",              meaning:"수건이 더 필요해요.",           example:"Could you send up more towels to room 407?"},
+        {word:"The toilet is clogged.",            phonetic:"/ðə ˈtɔɪlɪt ɪz klɒɡd/",              meaning:"변기가 막혔어요.",              example:"Hi, I have a problem — the toilet is clogged."},
+        {word:"How do I get to downtown?",         phonetic:"/haʊ duː aɪ ɡɛt tə ˈdaʊntaʊn/",      meaning:"시내 어떻게 가요?",             example:"How do I get to downtown from the hotel?"},
+        {word:"Can I have my bill itemized?",      phonetic:"/kæn aɪ hæv maɪ bɪl ˈaɪtəmaɪzd/",   meaning:"영수증 항목별로 받을 수 있나요?",example:"Can I have my bill itemized before I check out?"},
+        {word:"I think I was overcharged.",        phonetic:"/aɪ θɪŋk aɪ wɒz ˌoʊvərˈtʃɑːrdʒd/",  meaning:"요금이 잘못 청구된 것 같아요.", example:"I think I was overcharged. Can you check this?"},
+        {word:"Thank you for a wonderful stay.",   phonetic:"/θæŋk juː fər ə ˈwʌndərfəl steɪ/",   meaning:"정말 좋은 숙박이었어요.",       example:"Thank you for a wonderful stay. I'll definitely come back."},
+        {word:"Where is the elevator?",            phonetic:"/wɛr ɪz ðə ˈɛlɪveɪtər/",             meaning:"엘리베이터 어디예요?",          example:"Excuse me, where is the elevator?"},
+        {word:"What time is breakfast served?",    phonetic:"/wɒt taɪm ɪz ˈbrɛkfəst sɜːrvd/",     meaning:"조식은 몇 시부터예요?",         example:"What time is breakfast served in the morning?"},
+        {word:"Is the pool open?",                 phonetic:"/ɪz ðə puːl ˈoʊpən/",                meaning:"수영장 열려 있나요?",           example:"Is the pool open now? What are the hours?"},
+        {word:"Can I get a non-smoking room?",     phonetic:"/kæn aɪ ɡɛt ə nɒn ˈsmoʊkɪŋ ruːm/",  meaning:"금연 객실로 바꿔 주시겠어요?",  example:"Can I get a non-smoking room instead?"},
+        {word:"Can you recommend a restaurant?",   phonetic:"/kæn juː ˌrɛkəˈmɛnd ə ˈrɛstərɒnt/",  meaning:"식당 추천해 주시겠어요?",       example:"Can you recommend a good restaurant nearby?"},
+      ]
+    },
+    {
+      id:'airport', name:'공항', icon:'✈️', color:'green',
+      words:[
+        {word:"Where is the check-in counter?",    phonetic:"/wɛr ɪz ðə tʃɛk ɪn ˈkaʊntər/",      meaning:"체크인 카운터 어디예요?",       example:"Excuse me, where is the check-in counter for Korean Air?"},
+        {word:"I'd like a window seat.",           phonetic:"/aɪd laɪk ə ˈwɪndoʊ siːt/",          meaning:"창가 좌석으로 주세요.",         example:"I'd like a window seat if there's one available."},
+        {word:"Can I take this as carry-on?",      phonetic:"/kæn aɪ teɪk ðɪs æz ˈkæri ɒn/",     meaning:"이거 기내 반입 가능한가요?",    example:"Can I take this bag as carry-on?"},
+        {word:"My bag is overweight.",             phonetic:"/maɪ bæɡ ɪz ˌoʊvərˈweɪt/",           meaning:"가방이 무게 초과예요.",         example:"My bag is overweight — how much is the fee?"},
+        {word:"Where is the boarding gate?",       phonetic:"/wɛr ɪz ðə ˈbɔːrdɪŋ ɡeɪt/",         meaning:"탑승 게이트가 어디예요?",       example:"Where is the boarding gate for flight KE001?"},
+        {word:"When does boarding begin?",         phonetic:"/wɛn dʌz ˈbɔːrdɪŋ bɪˈɡɪn/",         meaning:"탑승은 언제 시작해요?",         example:"Excuse me, when does boarding begin for this flight?"},
+        {word:"My flight has been delayed.",       phonetic:"/maɪ flaɪt hæz bɪn dɪˈleɪd/",        meaning:"비행기가 연착됐어요.",          example:"My flight has been delayed. Can you help me rebook?"},
+        {word:"I missed my connecting flight.",    phonetic:"/aɪ mɪst maɪ kəˈnɛktɪŋ flaɪt/",     meaning:"환승 비행기를 놓쳤어요.",       example:"I missed my connecting flight due to the delay."},
+        {word:"Where do I go through customs?",    phonetic:"/wɛr duː aɪ ɡoʊ θruː ˈkʌstəmz/",    meaning:"세관은 어디서 해요?",           example:"Where do I go through customs after landing?"},
+        {word:"Do you have anything to declare?",  phonetic:"/duː juː hæv ˈɛniθɪŋ tə dɪˈklɛər/", meaning:"신고할 물품 있으세요?",         example:"Do you have anything to declare?"},
+        {word:"Nothing to declare.",               phonetic:"/ˈnʌθɪŋ tə dɪˈklɛər/",              meaning:"신고할 물품 없어요.",           example:"Nothing to declare. Just personal belongings."},
+        {word:"What is the purpose of your visit?",phonetic:"/wɒt ɪz ðə ˈpɜːrpəs əv jər ˈvɪzɪt/",meaning:"방문 목적이 뭔가요?",           example:"What is the purpose of your visit to the country?"},
+        {word:"I'm here for tourism.",             phonetic:"/aɪm hɪər fər ˈtʊərɪzəm/",           meaning:"관광 차 왔어요.",              example:"I'm here for tourism. About a week."},
+        {word:"How long will you be staying?",     phonetic:"/haʊ lɒŋ wɪl juː biː ˈsteɪɪŋ/",     meaning:"얼마나 머무실 예정이에요?",     example:"How long will you be staying in the country?"},
+        {word:"I'm staying at a hotel.",           phonetic:"/aɪm ˈsteɪɪŋ æt ə hoʊˈtɛl/",         meaning:"호텔에 묵을 예정이에요.",       example:"I'm staying at a hotel in the city center."},
+        {word:"My luggage is missing.",            phonetic:"/maɪ ˈlʌɡɪdʒ ɪz ˈmɪsɪŋ/",            meaning:"짐이 없어졌어요.",             example:"Excuse me, my luggage is missing from the carousel."},
+        {word:"Can I file a lost baggage claim?",  phonetic:"/kæn aɪ faɪl ə lɒst ˈbæɡɪdʒ kleɪm/",meaning:"분실 수하물 신고할 수 있나요?", example:"Can I file a lost baggage claim here?"},
+        {word:"Where is the currency exchange?",   phonetic:"/wɛr ɪz ðə ˈkʌrənsi ɪksˈtʃeɪndʒ/",  meaning:"환전소가 어디예요?",            example:"Excuse me, where is the currency exchange desk?"},
+        {word:"What's the exchange rate?",         phonetic:"/wɒts ðə ɪksˈtʃeɪndʒ reɪt/",         meaning:"환율이 어떻게 되나요?",         example:"What's the exchange rate for US dollars today?"},
+        {word:"Where can I get a SIM card?",       phonetic:"/wɛr kæn aɪ ɡɛt ə sɪm kɑːrd/",       meaning:"유심은 어디서 살 수 있나요?",   example:"Where can I get a local SIM card in the airport?"},
+        {word:"Is there free Wi-Fi here?",         phonetic:"/ɪz ðɛr friː ˈwaɪfaɪ hɪər/",         meaning:"여기 무료 와이파이 있나요?",     example:"Is there free Wi-Fi here in the terminal?"},
+        {word:"How do I get to the city?",         phonetic:"/haʊ duː aɪ ɡɛt tə ðə ˈsɪti/",       meaning:"시내까지 어떻게 가요?",         example:"How do I get to the city center from the airport?"},
+        {word:"Is there a shuttle bus?",           phonetic:"/ɪz ðɛr ə ˈʃʌtəl bʌs/",              meaning:"셔틀버스 있나요?",             example:"Is there a shuttle bus to the main hotels?"},
+        {word:"How long does it take?",            phonetic:"/haʊ lɒŋ dʌz ɪt teɪk/",              meaning:"얼마나 걸려요?",               example:"How long does it take to get downtown by train?"},
+        {word:"Can I get on the standby list?",    phonetic:"/kæn aɪ ɡɛt ɒn ðə ˈstændbɪ lɪst/",  meaning:"대기 명단에 올려 주시겠어요?",  example:"I'd like to get on the standby list for an earlier flight."},
+        {word:"Where is the baggage claim?",       phonetic:"/wɛr ɪz ðə ˈbæɡɪdʒ kleɪm/",          meaning:"수하물 찾는 곳이 어디예요?",    example:"Where is the baggage claim area for flight OZ202?"},
+        {word:"My passport is expired.",           phonetic:"/maɪ ˈpæspɔːrt ɪz ɪkˈspaɪərd/",      meaning:"여권이 만료됐어요.",            example:"I just realized my passport is expired. What should I do?"},
+        {word:"Is this the right terminal?",       phonetic:"/ɪz ðɪs ðə raɪt ˈtɜːrmɪnəl/",        meaning:"이게 맞는 터미널인가요?",       example:"Excuse me, is this the right terminal for international flights?"},
+        {word:"Can I get a transit visa?",         phonetic:"/kæn aɪ ɡɛt ə ˈtrænzɪt ˈviːzə/",     meaning:"통과 비자 받을 수 있나요?",     example:"Do I need a transit visa for a stopover in Tokyo?"},
+        {word:"Where are you staying?",            phonetic:"/wɛr ɑːr juː ˈsteɪɪŋ/",              meaning:"어디에 머무실 예정이에요?",     example:"Where are you staying during your visit?"},
+      ]
+    },
+    {
+      id:'shopping', name:'쇼핑', icon:'🛍️', color:'pink',
+      words:[
+        {word:"How much is this?",                 phonetic:"/haʊ mʌtʃ ɪz ðɪs/",                  meaning:"이거 얼마예요?",               example:"Excuse me, how much is this jacket?"},
+        {word:"Do you have this in a smaller size?",phonetic:"/duː juː hæv ðɪs ɪn ə ˈsmɔːlər saɪz/",meaning:"이거 작은 사이즈 있나요?",    example:"Do you have this in a smaller size? This one is too big."},
+        {word:"Can I try this on?",                phonetic:"/kæn aɪ traɪ ðɪs ɒn/",               meaning:"입어봐도 될까요?",             example:"Can I try this on? Where's the fitting room?"},
+        {word:"Where is the fitting room?",        phonetic:"/wɛr ɪz ðə ˈfɪtɪŋ ruːm/",            meaning:"탈의실이 어디예요?",            example:"Excuse me, where is the fitting room?"},
+        {word:"This doesn't fit.",                 phonetic:"/ðɪs ˈdʌzənt fɪt/",                  meaning:"이거 안 맞아요.",              example:"This doesn't fit. Do you have a different size?"},
+        {word:"Do you have this in another color?",phonetic:"/duː juː hæv ðɪs ɪn əˈnʌðər ˈkʌlər/",meaning:"다른 색상 있나요?",            example:"Do you have this in another color, maybe black?"},
+        {word:"Is this on sale?",                  phonetic:"/ɪz ðɪs ɒn seɪl/",                   meaning:"이거 세일 중이에요?",           example:"Is this on sale? I saw a sign outside."},
+        {word:"Can I get a discount?",             phonetic:"/kæn aɪ ɡɛt ə ˈdɪskaʊnt/",           meaning:"할인 받을 수 있나요?",          example:"Can I get a discount if I buy two?"},
+        {word:"I'll take it.",                     phonetic:"/aɪl teɪk ɪt/",                       meaning:"이걸로 할게요.",               example:"Perfect, I'll take it. Can I pay by card?"},
+        {word:"Can I get a receipt?",              phonetic:"/kæn aɪ ɡɛt ə rɪˈsiːt/",             meaning:"영수증 주시겠어요?",            example:"Can I get a receipt, please?"},
+        {word:"Can I return this?",                phonetic:"/kæn aɪ rɪˈtɜːrn ðɪs/",              meaning:"이거 반품할 수 있나요?",        example:"Can I return this if it doesn't fit?"},
+        {word:"What's your return policy?",        phonetic:"/wɒts jər rɪˈtɜːrn ˈpɒlɪsi/",        meaning:"반품 정책이 어떻게 되나요?",   example:"What's your return policy for online orders?"},
+        {word:"Do you gift wrap?",                 phonetic:"/duː juː ɡɪft ræp/",                  meaning:"선물 포장 해주시나요?",         example:"Do you gift wrap? It's for a birthday present."},
+        {word:"I'm just browsing.",                phonetic:"/aɪm dʒʌst ˈbraʊzɪŋ/",               meaning:"그냥 구경하는 중이에요.",       example:"No thanks, I'm just browsing for now."},
+        {word:"Can I pay by card?",                phonetic:"/kæn aɪ peɪ baɪ kɑːrd/",             meaning:"카드로 낼 수 있나요?",          example:"Can I pay by card or is it cash only?"},
+        {word:"Do you have a loyalty card?",       phonetic:"/duː juː hæv ə ˈlɔɪəlti kɑːrd/",     meaning:"포인트 카드 있나요?",           example:"Do you have a loyalty card I can sign up for?"},
+        {word:"Is this the latest model?",         phonetic:"/ɪz ðɪs ðə ˈleɪtɪst ˈmɒdəl/",        meaning:"이게 최신 모델이에요?",         example:"Is this the latest model of the iPhone?"},
+        {word:"Do you have this in stock?",        phonetic:"/duː juː hæv ðɪs ɪn stɒk/",           meaning:"재고 있나요?",                 example:"Do you have this in stock? I don't see it on the shelf."},
+        {word:"When will it be back in stock?",    phonetic:"/wɛn wɪl ɪt biː bæk ɪn stɒk/",       meaning:"언제 재입고되나요?",            example:"When will it be back in stock? Can you notify me?"},
+        {word:"Can you hold this for me?",         phonetic:"/kæn juː hoʊld ðɪs fər miː/",         meaning:"이거 좀 맡아 주시겠어요?",      example:"Can you hold this for me while I look around?"},
+        {word:"Is there a warranty?",              phonetic:"/ɪz ðɛr ə ˈwɒrənti/",                meaning:"보증서 있나요?",               example:"Is there a warranty on this product?"},
+        {word:"How long is the warranty?",         phonetic:"/haʊ lɒŋ ɪz ðə ˈwɒrənti/",           meaning:"보증 기간이 얼마예요?",         example:"How long is the warranty on this laptop?"},
+        {word:"Do you ship internationally?",      phonetic:"/duː juː ʃɪp ˌɪntərˈnæʃənəli/",       meaning:"해외 배송 되나요?",             example:"Do you ship internationally to Korea?"},
+        {word:"I need this delivered by Friday.",  phonetic:"/aɪ niːd ðɪs dɪˈlɪvərd baɪ ˈfraɪdeɪ/",meaning:"금요일까지 배달돼야 해요.",    example:"I need this delivered by Friday — is that possible?"},
+        {word:"Can I exchange this?",              phonetic:"/kæn aɪ ɪksˈtʃeɪndʒ ðɪs/",           meaning:"교환할 수 있나요?",             example:"Can I exchange this for a different size?"},
+        {word:"The zipper is broken.",             phonetic:"/ðə ˈzɪpər ɪz ˈbroʊkən/",             meaning:"지퍼가 망가졌어요.",            example:"The zipper is broken — can I get a replacement?"},
+        {word:"I'd like to place an order.",       phonetic:"/aɪd laɪk tə pleɪs ən ˈɔːrdər/",     meaning:"주문하고 싶어요.",              example:"I'd like to place an order for this item online."},
+        {word:"Where is the checkout?",            phonetic:"/wɛr ɪz ðə ˈtʃɛkaʊt/",               meaning:"계산대가 어디예요?",            example:"Excuse me, where is the checkout?"},
+        {word:"Do you have a bag?",                phonetic:"/duː juː hæv ə bæɡ/",                  meaning:"봉투 있나요?",                 example:"Do you have a bag for this? It's quite heavy."},
+        {word:"That's a bit too expensive.",       phonetic:"/ðæts ə bɪt tuː ɪkˈspɛnsɪv/",         meaning:"좀 비싸네요.",                 example:"That's a bit too expensive — do you have anything cheaper?"},
+      ]
+    },
+    {
+      id:'hospital', name:'병원·약국', icon:'🏥', color:'red',
+      words:[
+        {word:"I need to see a doctor.",              phonetic:"/aɪ niːd tə siː ə ˈdɒktər/",              meaning:"의사를 만나야 해요.",           example:"I need to see a doctor — I'm not feeling well."},
+        {word:"I have a fever.",                      phonetic:"/aɪ hæv ə ˈfiːvər/",                     meaning:"열이 있어요.",                 example:"I have a fever and a sore throat."},
+        {word:"I have a headache.",                   phonetic:"/aɪ hæv ə ˈhɛdeɪk/",                     meaning:"두통이 있어요.",               example:"I've had a headache since this morning."},
+        {word:"I feel nauseous.",                     phonetic:"/aɪ fiːl ˈnɔːziəs/",                     meaning:"메스꺼워요.",                  example:"I feel nauseous after taking the medicine."},
+        {word:"I have a stomachache.",                phonetic:"/aɪ hæv ə ˈstʌməkeɪk/",                  meaning:"배가 아파요.",                 example:"I have a stomachache — I think I ate something bad."},
+        {word:"I'm having trouble breathing.",        phonetic:"/aɪm ˈhævɪŋ ˈtrʌbəl ˈbriːðɪŋ/",         meaning:"숨쉬기가 힘들어요.",            example:"I'm having trouble breathing after running."},
+        {word:"I twisted my ankle.",                  phonetic:"/aɪ ˈtwɪstɪd maɪ ˈæŋkəl/",               meaning:"발목을 삐었어요.",             example:"I twisted my ankle while walking down the stairs."},
+        {word:"I think I broke my arm.",              phonetic:"/aɪ θɪŋk aɪ broʊk maɪ ɑːrm/",            meaning:"팔이 부러진 것 같아요.",        example:"I think I broke my arm — it hurts to move it."},
+        {word:"I have a rash.",                       phonetic:"/aɪ hæv ə ræʃ/",                         meaning:"발진이 있어요.",               example:"I have a rash on my arm since yesterday."},
+        {word:"I'm allergic to penicillin.",          phonetic:"/aɪm əˈlɜːrdʒɪk tə ˌpɛnɪˈsɪlɪn/",       meaning:"페니실린 알레르기가 있어요.",   example:"I'm allergic to penicillin — please check before prescribing."},
+        {word:"How long have you had this?",          phonetic:"/haʊ lɒŋ hæv juː hæd ðɪs/",              meaning:"이게 얼마나 됐어요?",           example:"How long have you had this pain?"},
+        {word:"Where does it hurt?",                  phonetic:"/wɛr dʌz ɪt hɜːrt/",                     meaning:"어디가 아프세요?",              example:"Can you show me where it hurts?"},
+        {word:"It hurts here.",                       phonetic:"/ɪt hɜːrts hɪər/",                       meaning:"여기가 아파요.",               example:"It hurts here, right below my ribs."},
+        {word:"On a scale of 1 to 10.",               phonetic:"/ɒn ə skeɪl əv wʌn tə tɛn/",             meaning:"1에서 10 사이로 말하면요.",     example:"On a scale of 1 to 10, how bad is the pain?"},
+        {word:"I need a prescription.",               phonetic:"/aɪ niːd ə prɪˈskrɪpʃən/",               meaning:"처방전이 필요해요.",            example:"I need a prescription for this medication."},
+        {word:"Do I need surgery?",                   phonetic:"/duː aɪ niːd ˈsɜːrdʒəri/",               meaning:"수술이 필요한가요?",            example:"Do I need surgery, or can it heal on its own?"},
+        {word:"Is it serious?",                       phonetic:"/ɪz ɪt ˈsɪəriəs/",                       meaning:"심각한 건가요?",               example:"Is it serious? Should I be worried?"},
+        {word:"I need painkillers.",                  phonetic:"/aɪ niːd ˈpeɪnkɪlərz/",                  meaning:"진통제가 필요해요.",            example:"I need painkillers for the pain."},
+        {word:"How many times a day?",                phonetic:"/haʊ ˈmɛni taɪmz ə deɪ/",                meaning:"하루에 몇 번이요?",             example:"How many times a day should I take this?"},
+        {word:"Take this with food.",                 phonetic:"/teɪk ðɪs wɪð fuːd/",                    meaning:"이건 음식과 함께 드세요.",       example:"Take this with food to avoid stomach irritation."},
+        {word:"I have insurance.",                    phonetic:"/aɪ hæv ɪnˈʃʊərəns/",                    meaning:"보험이 있어요.",               example:"I have insurance — do you accept it here?"},
+        {word:"I need a blood test.",                 phonetic:"/aɪ niːd ə blʌd tɛst/",                  meaning:"혈액 검사가 필요해요.",          example:"The doctor said I need a blood test."},
+        {word:"Can I get an X-ray?",                  phonetic:"/kæn aɪ ɡɛt ən ɛks reɪ/",                meaning:"엑스레이 찍을 수 있나요?",      example:"Can I get an X-ray to check for fractures?"},
+        {word:"I need to make an appointment.",       phonetic:"/aɪ niːd tə meɪk ən əˈpɔɪntmənt/",       meaning:"예약을 해야 해요.",             example:"I need to make an appointment with a specialist."},
+        {word:"I have been vomiting.",                phonetic:"/aɪ hæv bɪn ˈvɒmɪtɪŋ/",                 meaning:"구토를 했어요.",               example:"I have been vomiting since last night."},
+        {word:"I feel dizzy.",                        phonetic:"/aɪ fiːl ˈdɪzi/",                        meaning:"어지러워요.",                  example:"I feel dizzy when I stand up too fast."},
+        {word:"I have a sore throat.",                phonetic:"/aɪ hæv ə sɔːr θroʊt/",                  meaning:"목이 아파요.",                 example:"I have a sore throat and it's hard to swallow."},
+        {word:"I can't sleep.",                       phonetic:"/aɪ kɑːnt sliːp/",                       meaning:"잠을 못 자요.",                example:"I can't sleep because of the pain."},
+        {word:"I need cough medicine.",               phonetic:"/aɪ niːd kɒf ˈmɛdsɪn/",                  meaning:"기침약이 필요해요.",            example:"I need cough medicine — I've been coughing all night."},
+        {word:"Where is the nearest pharmacy?",       phonetic:"/wɛr ɪz ðə ˈnɪərɪst ˈfɑːrməsi/",         meaning:"가장 가까운 약국이 어디예요?",  example:"Where is the nearest pharmacy? I need medication urgently."},
+        {word:"Do you have this over the counter?",   phonetic:"/duː juː hæv ðɪs ˈoʊvər ðə ˈkaʊntər/",  meaning:"처방전 없이 살 수 있나요?",     example:"Do you have this over the counter, or do I need a prescription?"},
+        {word:"I'm feeling better now.",              phonetic:"/aɪm ˈfiːlɪŋ ˈbɛtər naʊ/",               meaning:"이제 좀 나아졌어요.",           example:"I'm feeling better now, thank you."},
+        {word:"I have high blood pressure.",          phonetic:"/aɪ hæv haɪ blʌd ˈprɛʃər/",              meaning:"고혈압이 있어요.",             example:"I have high blood pressure and take medication daily."},
+        {word:"I'm diabetic.",                        phonetic:"/aɪm ˌdaɪəˈbɛtɪk/",                     meaning:"당뇨가 있어요.",               example:"I'm diabetic, so please check the sugar content."},
+        {word:"I need stitches.",                     phonetic:"/aɪ niːd ˈstɪtʃɪz/",                     meaning:"봉합이 필요해요.",             example:"The cut is deep — I think I need stitches."},
+        {word:"Can you refill my prescription?",      phonetic:"/kæn juː ˌriːˈfɪl maɪ prɪˈskrɪpʃən/",   meaning:"처방전 리필 해주시겠어요?",     example:"Can you refill my prescription? I'm running out."},
+        {word:"I have a cold.",                       phonetic:"/aɪ hæv ə koʊld/",                       meaning:"감기에 걸렸어요.",             example:"I have a cold — runny nose and a slight fever."},
+        {word:"I need to see a specialist.",          phonetic:"/aɪ niːd tə siː ə ˈspɛʃəlɪst/",          meaning:"전문의를 만나야 해요.",          example:"I need to see a specialist for my knee problem."},
+        {word:"What are the side effects?",           phonetic:"/wɒt ɑːr ðə saɪd ɪˈfɛkts/",             meaning:"부작용이 뭔가요?",             example:"What are the side effects of this medication?"},
+        {word:"I have chest pain.",                   phonetic:"/aɪ hæv tʃɛst peɪn/",                    meaning:"가슴이 아파요.",               example:"I have chest pain — should I go to the ER?"},
+        {word:"I sprained my wrist.",                 phonetic:"/aɪ spreɪnd maɪ rɪst/",                  meaning:"손목을 삐었어요.",             example:"I sprained my wrist playing tennis."},
+        {word:"I need an ambulance.",                 phonetic:"/aɪ niːd ən ˈæmbjʊləns/",                meaning:"구급차가 필요해요.",            example:"Please call an ambulance immediately!"},
+        {word:"I'm pregnant.",                        phonetic:"/aɪm ˈprɛɡnənt/",                        meaning:"임신 중이에요.",               example:"I'm pregnant — is this medication safe?"},
+        {word:"I have a food allergy.",               phonetic:"/aɪ hæv ə fuːd ˈælərdʒi/",               meaning:"음식 알레르기가 있어요.",        example:"I have a food allergy to shellfish."},
+        {word:"How long is the recovery?",            phonetic:"/haʊ lɒŋ ɪz ðə rɪˈkʌvəri/",             meaning:"회복 기간이 얼마나 돼요?",      example:"How long is the recovery after the surgery?"},
+        {word:"I need a medical certificate.",        phonetic:"/aɪ niːd ə ˈmɛdɪkəl səˈtɪfɪkɪt/",       meaning:"진단서가 필요해요.",            example:"I need a medical certificate for work."},
+        {word:"Is it contagious?",                    phonetic:"/ɪz ɪt kənˈteɪdʒəs/",                   meaning:"전염되나요?",                  example:"Is it contagious? Should I stay away from others?"},
+        {word:"I need to fast before the test.",      phonetic:"/aɪ niːd tə fɑːst bɪˈfɔːr ðə tɛst/",    meaning:"검사 전에 금식해야 해요.",       example:"Do I need to fast before the blood test?"},
+        {word:"My prescription ran out.",             phonetic:"/maɪ prɪˈskrɪpʃən ræn aʊt/",             meaning:"처방약이 다 떨어졌어요.",        example:"My prescription ran out — can I get a refill?"},
+      ]
+    },
+    {
+      id:'emergency', name:'긴급상황', icon:'🚨', color:'red',
+      words:[
+        {word:"Help!",                                phonetic:"/hɛlp/",                                  meaning:"도와주세요!",                  example:"Help! Someone call an ambulance!"},
+        {word:"Call the police!",                     phonetic:"/kɔːl ðə pəˈliːs/",                      meaning:"경찰을 불러주세요!",            example:"Call the police — there's been an accident!"},
+        {word:"Call an ambulance!",                   phonetic:"/kɔːl ən ˈæmbjʊləns/",                   meaning:"구급차를 불러주세요!",           example:"Call an ambulance! He's unconscious!"},
+        {word:"There's been an accident.",            phonetic:"/ðɛrz bɪn ən ˈæksɪdənt/",                meaning:"사고가 났어요.",               example:"There's been an accident on the highway."},
+        {word:"I've been robbed.",                    phonetic:"/aɪv bɪn rɒbd/",                          meaning:"강도를 당했어요.",             example:"I've been robbed — they took my wallet and phone."},
+        {word:"My wallet was stolen.",                phonetic:"/maɪ ˈwɒlɪt wɒz ˈstoʊlən/",              meaning:"지갑을 도둑맞았어요.",           example:"My wallet was stolen on the subway."},
+        {word:"I'm lost.",                            phonetic:"/aɪm lɒst/",                              meaning:"길을 잃었어요.",               example:"I'm lost — can you help me find my hotel?"},
+        {word:"I can't find my passport.",            phonetic:"/aɪ kɑːnt faɪnd maɪ ˈpæspɔːrt/",         meaning:"여권을 못 찾겠어요.",           example:"I can't find my passport — I think it was stolen."},
+        {word:"There's a fire!",                      phonetic:"/ðɛrz ə ˈfaɪər/",                        meaning:"불이 났어요!",                 example:"There's a fire on the third floor — evacuate now!"},
+        {word:"I need the police.",                   phonetic:"/aɪ niːd ðə pəˈliːs/",                   meaning:"경찰이 필요해요.",             example:"I need the police — someone broke into my room."},
+        {word:"Someone is following me.",             phonetic:"/ˈsʌmwʌn ɪz ˈfɒloʊɪŋ miː/",              meaning:"누가 저를 따라오고 있어요.",     example:"Someone is following me — I'm scared."},
+        {word:"I've had a car accident.",             phonetic:"/aɪv hæd ə kɑːr ˈæksɪdənt/",             meaning:"차 사고가 났어요.",             example:"I've had a car accident — nobody is hurt but the car is damaged."},
+        {word:"Is anyone hurt?",                      phonetic:"/ɪz ˈɛniwʌn hɜːrt/",                     meaning:"다친 사람 있어요?",             example:"Is anyone hurt? Should I call for help?"},
+        {word:"I need to report a theft.",            phonetic:"/aɪ niːd tə rɪˈpɔːrt ə θɛft/",           meaning:"도난 신고를 해야 해요.",         example:"I need to report a theft at the hotel."},
+        {word:"Where is the nearest embassy?",        phonetic:"/wɛr ɪz ðə ˈnɪərɪst ˈɛmbəsi/",           meaning:"가장 가까운 대사관이 어디예요?", example:"Where is the nearest Korean embassy?"},
+        {word:"I need emergency assistance.",         phonetic:"/aɪ niːd ɪˈmɜːrdʒənsi əˈsɪstəns/",       meaning:"긴급 도움이 필요해요.",          example:"I need emergency assistance — please send help."},
+        {word:"Please don't hurt me.",                phonetic:"/pliːz doʊnt hɜːrt miː/",                 meaning:"저를 다치게 하지 마세요.",       example:"Please don't hurt me — take whatever you want."},
+        {word:"I'm having a heart attack.",           phonetic:"/aɪm ˈhævɪŋ ə hɑːrt əˈtæk/",             meaning:"심장마비가 오고 있어요.",        example:"I'm having a heart attack — call 911!"},
+        {word:"He's not breathing.",                  phonetic:"/hiːz nɒt ˈbriːðɪŋ/",                    meaning:"숨을 안 쉬어요.",              example:"He's not breathing — does anyone know CPR?"},
+        {word:"There's been a break-in.",             phonetic:"/ðɛrz bɪn ə breɪk ɪn/",                  meaning:"침입이 있었어요.",             example:"There's been a break-in — my room was ransacked."},
+        {word:"I need to cancel my credit card.",     phonetic:"/aɪ niːd tə ˈkænsəl maɪ ˈkrɛdɪt kɑːrd/",meaning:"신용카드를 정지해야 해요.",      example:"I need to cancel my credit card — it was stolen."},
+        {word:"What is the emergency number?",        phonetic:"/wɒt ɪz ðə ɪˈmɜːrdʒənsi ˈnʌmbər/",       meaning:"긴급전화 번호가 뭐예요?",       example:"What is the emergency number here — is it 911?"},
+        {word:"I need a translator.",                 phonetic:"/aɪ niːd ə trænsˈleɪtər/",                meaning:"통역사가 필요해요.",            example:"I need a translator — I don't speak the language."},
+        {word:"I was in a fight.",                    phonetic:"/aɪ wɒz ɪn ə faɪt/",                     meaning:"싸움에 휘말렸어요.",            example:"I was in a fight and I need medical attention."},
+        {word:"My child is missing.",                 phonetic:"/maɪ tʃaɪld ɪz ˈmɪsɪŋ/",                 meaning:"아이가 없어졌어요.",            example:"My child is missing — I can't find him anywhere."},
+        {word:"I need to make an emergency call.",    phonetic:"/aɪ niːd tə meɪk ən ɪˈmɜːrdʒənsi kɔːl/", meaning:"긴급전화를 해야 해요.",          example:"I need to make an emergency call — please lend me your phone."},
+        {word:"Someone collapsed.",                   phonetic:"/ˈsʌmwʌn kəˈlæpst/",                     meaning:"누군가 쓰러졌어요.",            example:"Someone collapsed in the street — call for help!"},
+        {word:"I've been in a hit and run.",          phonetic:"/aɪv bɪn ɪn ə hɪt ænd rʌn/",             meaning:"뺑소니를 당했어요.",            example:"I've been in a hit and run — the car just drove away."},
+        {word:"I need to find my travel insurance.",  phonetic:"/aɪ niːd tə faɪnd maɪ ˈtrævəl ɪnˈʃʊərəns/",meaning:"여행보험을 찾아야 해요.",       example:"I need to find my travel insurance — I may need to file a claim."},
+        {word:"Please stay calm.",                    phonetic:"/pliːz steɪ kɑːm/",                       meaning:"침착하세요.",                  example:"Please stay calm — help is on the way."},
+        {word:"I need to file a police report.",      phonetic:"/aɪ niːd tə faɪl ə pəˈliːs rɪˈpɔːrt/",   meaning:"경찰 보고서를 작성해야 해요.",   example:"I need to file a police report for insurance purposes."},
+        {word:"Is there a doctor here?",              phonetic:"/ɪz ðɛr ə ˈdɒktər hɪər/",                meaning:"여기 의사 있나요?",             example:"Is there a doctor here? Someone needs help!"},
+        {word:"My bag was snatched.",                 phonetic:"/maɪ bæɡ wɒz snætʃt/",                   meaning:"가방을 날치기 당했어요.",        example:"My bag was snatched while I was walking."},
+        {word:"I need to contact my consulate.",      phonetic:"/aɪ niːd tə ˈkɒntækt maɪ ˈkɒnsjʊlɪt/",  meaning:"영사관에 연락해야 해요.",        example:"I need to contact my consulate — my passport was stolen."},
+        {word:"There's flooding.",                    phonetic:"/ðɛrz ˈflʌdɪŋ/",                         meaning:"홍수가 났어요.",               example:"There's flooding in the basement — we need to evacuate."},
+        {word:"I've been drugged.",                   phonetic:"/aɪv bɪn drʌɡd/",                        meaning:"약을 먹인 것 같아요.",          example:"I think I've been drugged — I feel very strange."},
+        {word:"Someone is having a seizure.",         phonetic:"/ˈsʌmwʌn ɪz ˈhævɪŋ ə ˈsiːʒər/",          meaning:"누군가 발작을 하고 있어요.",     example:"Someone is having a seizure — don't hold them down."},
+        {word:"I need to evacuate.",                  phonetic:"/aɪ niːd tə ɪˈvækjueɪt/",                meaning:"대피해야 해요.",               example:"I need to evacuate — where is the emergency exit?"},
+        {word:"I was scammed.",                       phonetic:"/aɪ wɒz skæmd/",                          meaning:"사기를 당했어요.",             example:"I was scammed online — they took my money."},
+        {word:"Where is the emergency exit?",         phonetic:"/wɛr ɪz ðə ɪˈmɜːrdʒənsi ˈɛɡzɪt/",        meaning:"비상구가 어디예요?",            example:"Where is the emergency exit in case of fire?"},
+        {word:"I need to speak to someone in Korean.",phonetic:"/aɪ niːd tə spiːk tə ˈsʌmwʌn ɪn kəˈriːən/",meaning:"한국어로 얘기할 수 있는 분이 필요해요.",example:"I need to speak to someone in Korean — do you have a translator?"},
+        {word:"My travel documents were stolen.",     phonetic:"/maɪ ˈtrævəl ˈdɒkjʊmənts wɜːr ˈstoʊlən/",meaning:"여행 서류를 도둑맞았어요.",      example:"My travel documents were stolen at the airport."},
+        {word:"I need emergency cash.",               phonetic:"/aɪ niːd ɪˈmɜːrdʒənsi kæʃ/",             meaning:"긴급 현금이 필요해요.",          example:"I need emergency cash — is there a Western Union nearby?"},
+        {word:"Please call my family.",               phonetic:"/pliːz kɔːl maɪ ˈfæmɪli/",               meaning:"가족에게 연락해 주세요.",        example:"Please call my family — here is the number."},
+        {word:"I witnessed an accident.",             phonetic:"/aɪ ˈwɪtnɪst ən ˈæksɪdənt/",             meaning:"사고를 목격했어요.",            example:"I witnessed an accident and want to give a statement."},
+        {word:"The situation is under control.",      phonetic:"/ðə ˌsɪtʃuˈeɪʃən ɪz ˈʌndər kənˈtroʊl/", meaning:"상황이 통제되고 있어요.",        example:"Please remain calm — the situation is under control."},
+        {word:"I need to get to a hospital now.",     phonetic:"/aɪ niːd tə ɡɛt tə ə ˈhɒspɪtəl naʊ/",    meaning:"지금 당장 병원에 가야 해요.",    example:"I need to get to a hospital now — it's urgent."},
+        {word:"Can you stay with me?",                phonetic:"/kæn juː steɪ wɪð miː/",                  meaning:"저와 함께 있어 주시겠어요?",     example:"Can you stay with me until help arrives?"},
+        {word:"I think I'm going into shock.",        phonetic:"/aɪ θɪŋk aɪm ˈɡoʊɪŋ ˈɪntə ʃɒk/",         meaning:"쇼크 상태인 것 같아요.",        example:"I feel cold and dizzy — I think I'm going into shock."},
+        {word:"Please hurry.",                        phonetic:"/pliːz ˈhʌri/",                           meaning:"서둘러 주세요.",               example:"Please hurry — it's a life or death situation."},
+      ]
+    },
+    {
+      id:'business', name:'비즈니스·회의', icon:'💼', color:'blue',
+      words:[
+        {word:"Let's get started.",                   phonetic:"/lɛts ɡɛt ˈstɑːrtɪd/",                   meaning:"시작해 볼까요.",               example:"Everyone's here — let's get started."},
+        {word:"Shall we begin?",                      phonetic:"/ʃæl wiː bɪˈɡɪn/",                       meaning:"시작할까요?",                  example:"It's 9 o'clock — shall we begin?"},
+        {word:"I'd like to introduce myself.",        phonetic:"/aɪd laɪk tə ˌɪntrəˈdjuːs maɪˈsɛlf/",   meaning:"자기소개를 하겠습니다.",         example:"I'd like to introduce myself — my name is Kim."},
+        {word:"Nice to meet you all.",                phonetic:"/naɪs tə miːt juː ɔːl/",                  meaning:"여러분 모두 만나서 반갑습니다.", example:"Nice to meet you all — I'm the new project manager."},
+        {word:"Let me share my screen.",              phonetic:"/lɛt miː ʃɛr maɪ skriːn/",                meaning:"화면을 공유할게요.",            example:"Let me share my screen so everyone can see the data."},
+        {word:"Can everyone hear me?",                phonetic:"/kæn ˈɛvrɪwʌn hɪər miː/",                meaning:"모두 들리시나요?",             example:"Can everyone hear me? My mic might be on mute."},
+        {word:"I'd like to present our findings.",    phonetic:"/aɪd laɪk tə prɪˈzɛnt aʊər ˈfaɪndɪŋz/", meaning:"결과를 발표하겠습니다.",         example:"I'd like to present our findings from last quarter."},
+        {word:"As you can see on this slide.",        phonetic:"/æz juː kæn siː ɒn ðɪs slaɪd/",           meaning:"이 슬라이드에서 보시다시피.",    example:"As you can see on this slide, revenue has grown 20%."},
+        {word:"Any questions so far?",                phonetic:"/ˈɛni ˈkwɛstʃənz soʊ fɑːr/",             meaning:"지금까지 질문 있으신가요?",      example:"Any questions so far before I continue?"},
+        {word:"Could you elaborate on that?",         phonetic:"/kʊd juː ɪˈlæbəreɪt ɒn ðæt/",            meaning:"좀 더 자세히 설명해 주시겠어요?",example:"Could you elaborate on that point?"},
+        {word:"Let's move on to the next item.",      phonetic:"/lɛts muːv ɒn tə ðə nɛkst ˈaɪtəm/",      meaning:"다음 안건으로 넘어갈게요.",      example:"Let's move on to the next item on the agenda."},
+        {word:"We're running out of time.",           phonetic:"/wɪər ˈrʌnɪŋ aʊt əv taɪm/",              meaning:"시간이 부족해요.",             example:"We're running out of time — let's wrap up."},
+        {word:"Let's take a five-minute break.",      phonetic:"/lɛts teɪk ə faɪv ˈmɪnɪt breɪk/",        meaning:"5분 휴식을 취합시다.",          example:"Let's take a five-minute break and reconvene."},
+        {word:"I'll follow up on that.",              phonetic:"/aɪl ˈfɒloʊ ʌp ɒn ðæt/",                 meaning:"그 부분은 후속 조치를 취할게요.", example:"I'll follow up on that and send you an update."},
+        {word:"Can we schedule a meeting?",           phonetic:"/kæn wiː ˈskɛdʒuːl ə ˈmiːtɪŋ/",          meaning:"회의 일정을 잡을 수 있을까요?",  example:"Can we schedule a meeting for next week?"},
+        {word:"I'll send you the minutes.",           phonetic:"/aɪl sɛnd juː ðə ˈmɪnɪts/",              meaning:"회의록을 보내드릴게요.",         example:"I'll send you the minutes after the meeting."},
+        {word:"What's the deadline?",                 phonetic:"/wɒts ðə ˈdɛdlaɪn/",                     meaning:"마감일이 언제예요?",            example:"What's the deadline for this project?"},
+        {word:"We need to meet the deadline.",        phonetic:"/wiː niːd tə miːt ðə ˈdɛdlaɪn/",         meaning:"마감일을 지켜야 해요.",          example:"We need to meet the deadline — no exceptions."},
+        {word:"Let's brainstorm some ideas.",         phonetic:"/lɛts ˈbreɪnstɔːrm sʌm aɪˈdɪəz/",        meaning:"아이디어를 브레인스토밍해봐요.", example:"Let's brainstorm some ideas for the campaign."},
+        {word:"I agree with your point.",             phonetic:"/aɪ əˈɡriː wɪð jər pɔɪnt/",              meaning:"그 포인트에 동의해요.",          example:"I agree with your point — we should proceed carefully."},
+        {word:"I see your point, but...",             phonetic:"/aɪ siː jər pɔɪnt bʌt/",                  meaning:"무슨 말씀인지 알겠는데...",      example:"I see your point, but we need to consider the budget."},
+        {word:"Could we revisit this later?",         phonetic:"/kʊd wiː ˌriːˈvɪzɪt ðɪs ˈleɪtər/",       meaning:"나중에 다시 논의할 수 있을까요?",example:"Could we revisit this later? I need more data."},
+        {word:"Let's put that on the agenda.",        phonetic:"/lɛts pʊt ðæt ɒn ðə əˈdʒɛndə/",          meaning:"그것을 안건에 올립시다.",        example:"Let's put that on the agenda for next week's meeting."},
+        {word:"What's the bottom line?",              phonetic:"/wɒts ðə ˈbɒtəm laɪn/",                  meaning:"핵심이 뭔가요?",               example:"What's the bottom line — are we profitable?"},
+        {word:"We need to cut costs.",                phonetic:"/wiː niːd tə kʌt kɒsts/",                 meaning:"비용을 줄여야 해요.",           example:"We need to cut costs — the budget is tight."},
+        {word:"Let's touch base later.",              phonetic:"/lɛts tʌtʃ beɪs ˈleɪtər/",               meaning:"나중에 연락합시다.",            example:"Let's touch base later this week to check progress."},
+        {word:"I'll loop you in.",                    phonetic:"/aɪl luːp juː ɪn/",                       meaning:"참여시켜 드릴게요.",            example:"I'll loop you in on the email thread."},
+        {word:"Can you take the lead on this?",       phonetic:"/kæn juː teɪk ðə liːd ɒn ðɪs/",          meaning:"이 부분을 맡아 주시겠어요?",     example:"Can you take the lead on this project?"},
+        {word:"We're on the same page.",              phonetic:"/wɪər ɒn ðə seɪm peɪdʒ/",                meaning:"같은 생각이에요.",             example:"Good — it sounds like we're on the same page."},
+        {word:"Let's circle back to this.",           phonetic:"/lɛts ˈsɜːrkəl bæk tə ðɪs/",             meaning:"이 부분으로 다시 돌아가봐요.",   example:"Let's circle back to this after the break."},
+        {word:"Can you send me the proposal?",        phonetic:"/kæn juː sɛnd miː ðə prəˈpoʊzəl/",        meaning:"제안서를 보내주시겠어요?",       example:"Can you send me the proposal by end of day?"},
+        {word:"We need your sign-off.",               phonetic:"/wiː niːd jər saɪn ɒf/",                  meaning:"승인이 필요해요.",             example:"We need your sign-off before we proceed."},
+        {word:"Let's get the ball rolling.",          phonetic:"/lɛts ɡɛt ðə bɔːl ˈroʊlɪŋ/",             meaning:"일을 시작합시다.",             example:"We've planned enough — let's get the ball rolling."},
+        {word:"I'll get back to you.",                phonetic:"/aɪl ɡɛt bæk tə juː/",                   meaning:"다시 연락드릴게요.",            example:"I'll get back to you once I've reviewed the numbers."},
+        {word:"This is a win-win situation.",         phonetic:"/ðɪs ɪz ə wɪn wɪn ˌsɪtʃuˈeɪʃən/",       meaning:"이건 서로 이득인 상황이에요.",   example:"If we collaborate, it's a win-win situation for both companies."},
+        {word:"We need to think outside the box.",    phonetic:"/wiː niːd tə θɪŋk ˌaʊtsaɪd ðə bɒks/",    meaning:"창의적으로 생각해야 해요.",      example:"To solve this problem, we need to think outside the box."},
+        {word:"What are the key takeaways?",          phonetic:"/wɒt ɑːr ðə kiː ˈteɪkəweɪz/",            meaning:"주요 요점이 뭔가요?",           example:"What are the key takeaways from today's meeting?"},
+        {word:"Let's wrap up.",                       phonetic:"/lɛts ræp ʌp/",                           meaning:"마무리합시다.",                example:"It's almost 5 — let's wrap up for today."},
+        {word:"Great job everyone.",                  phonetic:"/ɡreɪt dʒɒb ˈɛvrɪwʌn/",                  meaning:"모두 수고하셨습니다.",          example:"Great job everyone — we hit our targets this quarter."},
+        {word:"I'll put together a report.",          phonetic:"/aɪl pʊt təˈɡɛðər ə rɪˈpɔːrt/",          meaning:"보고서를 작성할게요.",          example:"I'll put together a report and share it by Friday."},
+        {word:"We exceeded our targets.",             phonetic:"/wiː ɪkˈsiːdɪd aʊər ˈtɑːrɡɪts/",         meaning:"목표를 초과달성했어요.",         example:"We exceeded our targets by 15% this quarter."},
+        {word:"The project is on track.",             phonetic:"/ðə ˈprɒdʒɛkt ɪz ɒn træk/",              meaning:"프로젝트가 순조롭게 진행 중이에요.", example:"I'm happy to report that the project is on track."},
+        {word:"We hit a roadblock.",                  phonetic:"/wiː hɪt ə ˈroʊdblɒk/",                  meaning:"장애물에 부딪혔어요.",          example:"We hit a roadblock with the supplier — we need a backup plan."},
+        {word:"Let's sync up tomorrow.",              phonetic:"/lɛts sɪŋk ʌp təˈmɒroʊ/",                meaning:"내일 맞춰봐요.",               example:"Let's sync up tomorrow morning before the client call."},
+        {word:"I need your input on this.",           phonetic:"/aɪ niːd jər ˈɪnpʊt ɒn ðɪs/",            meaning:"이 부분에 대한 의견이 필요해요.", example:"I need your input on this before I make a decision."},
+        {word:"That's a great suggestion.",           phonetic:"/ðæts ə ɡreɪt səˈdʒɛstʃən/",             meaning:"정말 좋은 제안이에요.",          example:"That's a great suggestion — let's put it into action."},
+        {word:"We're over budget.",                   phonetic:"/wɪər ˈoʊvər ˈbʌdʒɪt/",                  meaning:"예산을 초과했어요.",            example:"We're over budget — we need to cut some expenses."},
+        {word:"Can we get a status update?",          phonetic:"/kæn wiː ɡɛt ə ˈsteɪtəs ˈʌpdeɪt/",       meaning:"진행 상황 업데이트 받을 수 있나요?",example:"Can we get a status update on the new feature?"},
+        {word:"I'll escalate this issue.",            phonetic:"/aɪl ˈɛskəleɪt ðɪs ˈɪʃuː/",              meaning:"이 문제를 윗선에 보고할게요.",    example:"I'll escalate this issue to the management team."},
+        {word:"Let's align on the strategy.",         phonetic:"/lɛts əˈlaɪn ɒn ðə ˈstrætɪdʒi/",         meaning:"전략을 맞춰봐요.",             example:"Let's align on the strategy before we present to the client."},
+      ]
+    },
+    {
+      id:'weather', name:'날씨·일상심화', icon:'🌤️', color:'purple',
+      words:[
+        {word:"It's scorching hot today.",            phonetic:"/ɪts ˈskɔːrtʃɪŋ hɒt təˈdeɪ/",            meaning:"오늘 엄청 더워요.",            example:"It's scorching hot today — stay hydrated!"},
+        {word:"It's freezing cold.",                  phonetic:"/ɪts ˈfriːzɪŋ koʊld/",                   meaning:"엄청 추워요.",                 example:"It's freezing cold outside — wear a heavy coat."},
+        {word:"It's raining cats and dogs.",          phonetic:"/ɪts ˈreɪnɪŋ kæts ænd dɒɡz/",            meaning:"비가 억수같이 와요.",           example:"Don't go out — it's raining cats and dogs."},
+        {word:"There's a storm coming.",              phonetic:"/ðɛrz ə stɔːrm ˈkʌmɪŋ/",                 meaning:"폭풍이 오고 있어요.",           example:"There's a storm coming — we should stay inside."},
+        {word:"It cleared up nicely.",                phonetic:"/ɪt klɪərd ʌp ˈnaɪsli/",                  meaning:"날씨가 맑게 갰어요.",           example:"It cleared up nicely after the rain this morning."},
+        {word:"The humidity is unbearable.",          phonetic:"/ðə hjuːˈmɪdɪti ɪz ʌnˈbɛərəbəl/",        meaning:"습도가 너무 높아요.",           example:"The humidity is unbearable — feels like a sauna outside."},
+        {word:"It's quite mild today.",               phonetic:"/ɪts kwaɪt maɪld təˈdeɪ/",               meaning:"오늘 날씨가 온화해요.",          example:"It's quite mild today — perfect for a walk."},
+        {word:"We might get some snow.",              phonetic:"/wiː maɪt ɡɛt sʌm snoʊ/",                meaning:"눈이 올 수도 있어요.",          example:"The forecast says we might get some snow tonight."},
+        {word:"It's a bit overcast.",                 phonetic:"/ɪts ə bɪt ˈoʊvərkɑːst/",                meaning:"날씨가 좀 흐려요.",             example:"It's a bit overcast — bring an umbrella just in case."},
+        {word:"The forecast says rain.",              phonetic:"/ðə ˈfɔːrkɑːst sɛz reɪn/",               meaning:"비 예보가 있어요.",             example:"The forecast says rain for the whole weekend."},
+        {word:"What's the weather like there?",       phonetic:"/wɒts ðə ˈwɛðər laɪk ðɛr/",              meaning:"거기 날씨는 어때요?",           example:"What's the weather like there in summer?"},
+        {word:"How have you been keeping busy?",      phonetic:"/haʊ hæv juː bɪn ˈkiːpɪŋ ˈbɪzi/",        meaning:"요즘 어떻게 지내셨어요?",       example:"How have you been keeping busy since we last met?"},
+        {word:"I've been up to a lot lately.",        phonetic:"/aɪv bɪn ʌp tə ə lɒt ˈleɪtli/",          meaning:"요즘 많이 바빴어요.",           example:"I've been up to a lot lately — work has been crazy."},
+        {word:"Time flies, doesn't it?",              phonetic:"/taɪm flaɪz ˈdʌzənt ɪt/",                meaning:"시간이 빠르네요, 그렇죠?",      example:"It's already December — time flies, doesn't it?"},
+        {word:"I can't believe it's already...",      phonetic:"/aɪ kɑːnt bɪˈliːv ɪts ɔːlˈrɛdi/",        meaning:"벌써 ...라는 게 믿기지 않아요.", example:"I can't believe it's already Friday — the week flew by."},
+        {word:"How was your holiday?",                phonetic:"/haʊ wɒz jər ˈhɒlɪdeɪ/",                 meaning:"휴가는 어땠어요?",             example:"How was your holiday? Did you go anywhere nice?"},
+        {word:"I had a great time.",                  phonetic:"/aɪ hæd ə ɡreɪt taɪm/",                  meaning:"정말 좋은 시간을 보냈어요.",     example:"I had a great time in Bali — highly recommend it."},
+        {word:"What have you been up to?",            phonetic:"/wɒt hæv juː bɪn ʌp tuː/",               meaning:"어떻게 지내셨어요?",            example:"Long time no see — what have you been up to?"},
+        {word:"I've been swamped with work.",         phonetic:"/aɪv bɪn swɒmpt wɪð wɜːrk/",             meaning:"일에 치여서 바빴어요.",          example:"Sorry I haven't called — I've been swamped with work."},
+        {word:"Any exciting plans?",                  phonetic:"/ˈɛni ɪkˈsaɪtɪŋ plænz/",                 meaning:"신나는 계획 있어요?",           example:"Any exciting plans for the long weekend?"},
+        {word:"Same old, same old.",                  phonetic:"/seɪm oʊld seɪm oʊld/",                   meaning:"별거 없어요, 늘 그렇죠.",       example:"How's life? Same old, same old — just working."},
+        {word:"Things have been hectic.",             phonetic:"/θɪŋz hæv bɪn ˈhɛktɪk/",                 meaning:"정신없이 바빴어요.",            example:"Things have been hectic since the new project started."},
+        {word:"I could use a break.",                 phonetic:"/aɪ kʊd juːz ə breɪk/",                  meaning:"좀 쉬고 싶어요.",              example:"I've been working non-stop — I could really use a break."},
+        {word:"What do you do in your free time?",    phonetic:"/wɒt duː juː duː ɪn jər friː taɪm/",      meaning:"여가 시간에 뭘 하세요?",        example:"What do you do in your free time? Any hobbies?"},
+        {word:"I'm into photography lately.",         phonetic:"/aɪm ˈɪntə fəˈtɒɡrəfi ˈleɪtli/",          meaning:"요즘 사진에 빠져있어요.",       example:"I'm into photography lately — I just got a new camera."},
+        {word:"Have you tried any new restaurants?",  phonetic:"/hæv juː traɪd ˈɛni njuː ˈrɛstərɒnts/",  meaning:"새로운 식당 가봤어요?",          example:"Have you tried any new restaurants in the area?"},
+        {word:"I heard it's really good.",            phonetic:"/aɪ hɜːrd ɪts ˈrɪəli ɡʊd/",              meaning:"정말 좋다고 들었어요.",          example:"I heard that new Italian place is really good."},
+        {word:"Let's catch up soon.",                 phonetic:"/lɛts kætʃ ʌp suːn/",                    meaning:"곧 다시 만나요.",              example:"It was great seeing you — let's catch up soon."},
+        {word:"I really needed this.",                phonetic:"/aɪ ˈrɪəli ˈniːdɪd ðɪs/",                meaning:"정말 필요했어요.",             example:"Thanks for the coffee — I really needed this today."},
+        {word:"You look great!",                      phonetic:"/juː lʊk ɡreɪt/",                         meaning:"정말 좋아 보이세요!",           example:"Wow, you look great! Have you been working out?"},
+        {word:"Long time no see.",                    phonetic:"/lɒŋ taɪm noʊ siː/",                     meaning:"오랜만이에요.",                example:"Long time no see — it must have been at least a year!"},
+        {word:"How's the family?",                    phonetic:"/haʊz ðə ˈfæmɪli/",                      meaning:"가족들은 잘 지내요?",           example:"How's the family? Are the kids growing up fast?"},
+        {word:"It's been so long.",                   phonetic:"/ɪts bɪn soʊ lɒŋ/",                      meaning:"정말 오래됐네요.",             example:"It's been so long since we've had a chance to talk."},
+        {word:"We should do this more often.",        phonetic:"/wiː ʃʊd duː ðɪs mɔːr ˈɒfən/",           meaning:"이런 시간을 더 자주 가져요.",    example:"This was so much fun — we should do this more often."},
+        {word:"I couldn't agree more.",               phonetic:"/aɪ ˈkʊdənt əˈɡriː mɔːr/",               meaning:"완전히 동의해요.",             example:"I couldn't agree more — the food here is amazing."},
+        {word:"That makes total sense.",              phonetic:"/ðæt meɪks ˈtoʊtəl sɛns/",               meaning:"완전히 이해돼요.",             example:"Oh, that makes total sense — I see what you mean now."},
+        {word:"I'm so glad to hear that.",            phonetic:"/aɪm soʊ ɡlæd tə hɪər ðæt/",             meaning:"그 말을 들으니 정말 기뻐요.",    example:"You got the job? I'm so glad to hear that!"},
+        {word:"That must have been tough.",           phonetic:"/ðæt mʌst hæv bɪn tʌf/",                 meaning:"힘들었겠어요.",                example:"You went through all that alone? That must have been tough."},
+        {word:"Everything happens for a reason.",     phonetic:"/ˈɛvrɪθɪŋ ˈhæpənz fər ə ˈriːzən/",       meaning:"모든 일에는 이유가 있어요.",     example:"Don't worry too much — everything happens for a reason."},
+        {word:"Take it one day at a time.",           phonetic:"/teɪk ɪt wʌn deɪ æt ə taɪm/",             meaning:"하루하루 해 나가요.",           example:"It's overwhelming, I know. Just take it one day at a time."},
+        {word:"I'm counting on you.",                 phonetic:"/aɪm ˈkaʊntɪŋ ɒn juː/",                  meaning:"당신을 믿어요.",               example:"This is an important presentation — I'm counting on you."},
+        {word:"You can say that again!",              phonetic:"/juː kæn seɪ ðæt əˈɡɛn/",                meaning:"정말 그래요!",                 example:"'This summer is brutal.' — You can say that again!"},
+        {word:"I'm all ears.",                        phonetic:"/aɪm ɔːl ɪərz/",                         meaning:"다 듣고 있어요.",              example:"Tell me what happened — I'm all ears."},
+        {word:"Speak of the devil!",                  phonetic:"/spiːk əv ðə ˈdɛvəl/",                   meaning:"호랑이도 제 말하면 와요!",       example:"Speak of the devil — we were just talking about you!"},
+        {word:"That's the last thing I expected.",    phonetic:"/ðæts ðə lɑːst θɪŋ aɪ ɪkˈspɛktɪd/",     meaning:"정말 예상 밖이에요.",           example:"You quit your job? That's the last thing I expected."},
+        {word:"I'll cross that bridge when I come to it.",phonetic:"/aɪl krɒs ðæt brɪdʒ wɛn aɪ kʌm tə ɪt/",meaning:"그때 가서 생각할게요.",      example:"What if it doesn't work? I'll cross that bridge when I come to it."},
+        {word:"At the end of the day.",               phonetic:"/æt ðə ɛnd əv ðə deɪ/",                  meaning:"결국에는.",                   example:"At the end of the day, what matters most is your health."},
+        {word:"Keep me posted.",                      phonetic:"/kiːp miː ˈpoʊstɪd/",                    meaning:"계속 알려주세요.",             example:"Let me know how the interview goes — keep me posted."},
+        {word:"It's worth a shot.",                   phonetic:"/ɪts wɜːrθ ə ʃɒt/",                      meaning:"해볼 만해요.",                 example:"I'm not sure it'll work, but it's worth a shot."},
+        {word:"Better safe than sorry.",              phonetic:"/ˈbɛtər seɪf ðæn ˈsɒri/",                meaning:"나중에 후회하는 것보다 낫죠.",   example:"Bring a rain jacket — better safe than sorry."},
+      ]
+    },
+
+    {
+      id:'phrasal1', name:'구동사 기초1', icon:'📗', color:'green',
+      words:[
+        {word:"get up", phonetic:"/ɡɛt ʌp/", meaning:"일어나다", example:"I usually get up at 7am on weekdays."},
+        {word:"get on", phonetic:"/ɡɛt ɒn/", meaning:"탑승하다 / 잘 지내다", example:"Get on the bus before it leaves."},
+        {word:"get off", phonetic:"/ɡɛt ɒf/", meaning:"내리다", example:"Get off at the next stop."},
+        {word:"get in", phonetic:"/ɡɛt ɪn/", meaning:"들어가다 / 도착하다", example:"What time did you get in last night?"},
+        {word:"get out", phonetic:"/ɡɛt aʊt/", meaning:"나가다 / 벗어나다", example:"Let\'s get out of here — it\'s too crowded."},
+        {word:"get along", phonetic:"/ɡɛt əˈlɒŋ/", meaning:"사이좋게 지내다", example:"Do you get along with your coworkers?"},
+        {word:"get over", phonetic:"/ɡɛt ˈoʊvər/", meaning:"극복하다 / 회복하다", example:"It took me weeks to get over the flu."},
+        {word:"get through", phonetic:"/ɡɛt θruː/", meaning:"통과하다 / 연락이 닿다", example:"I tried calling but couldn\'t get through."},
+        {word:"get around", phonetic:"/ɡɛt əˈraʊnd/", meaning:"돌아다니다 / 피하다", example:"It\'s easy to get around the city by metro."},
+        {word:"get away", phonetic:"/ɡɛt əˈweɪ/", meaning:"벗어나다 / 도망가다", example:"I need to get away from work for a few days."},
+        {word:"get back", phonetic:"/ɡɛt bæk/", meaning:"돌아오다 / 되찾다", example:"I\'ll get back to you tomorrow morning."},
+        {word:"get down", phonetic:"/ɡɛt daʊn/", meaning:"내려오다 / 우울해지다", example:"Don\'t let small problems get you down."},
+        {word:"get into", phonetic:"/ɡɛt ˈɪntə/", meaning:"시작하다 / 빠져들다", example:"I\'ve really gotten into yoga lately."},
+        {word:"get behind", phonetic:"/ɡɛt bɪˈhaɪnd/", meaning:"뒤처지다", example:"I got behind on my work during the vacation."},
+        {word:"go on", phonetic:"/ɡoʊ ɒn/", meaning:"계속하다 / 일어나다", example:"What\'s going on? You look upset."},
+        {word:"go out", phonetic:"/ɡoʊ aʊt/", meaning:"외출하다 / 사귀다", example:"Would you like to go out for dinner tonight?"},
+        {word:"go off", phonetic:"/ɡoʊ ɒf/", meaning:"알람이 울리다 / 폭발하다", example:"My alarm went off at 6am this morning."},
+        {word:"go over", phonetic:"/ɡoʊ ˈoʊvər/", meaning:"검토하다 / 초과하다", example:"Let\'s go over the plan one more time."},
+        {word:"go through", phonetic:"/ɡoʊ θruː/", meaning:"겪다 / 살펴보다", example:"She went through a really tough time last year."},
+        {word:"go along", phonetic:"/ɡoʊ əˈlɒŋ/", meaning:"동의하다 / 따라가다", example:"I\'ll go along with whatever you decide."},
+        {word:"come up", phonetic:"/kʌm ʌp/", meaning:"나타나다 / 생기다", example:"Something came up and I can\'t make it tonight."},
+        {word:"come out", phonetic:"/kʌm aʊt/", meaning:"나오다 / 출시되다", example:"The new album comes out next Friday."},
+        {word:"come across", phonetic:"/kʌm əˈkrɒs/", meaning:"우연히 만나다", example:"I came across an old photo of us today."},
+        {word:"come back", phonetic:"/kʌm bæk/", meaning:"돌아오다", example:"When are you coming back from your trip?"},
+        {word:"come up with", phonetic:"/kʌm ʌp wɪð/", meaning:"생각해 내다", example:"She came up with a brilliant solution."},
+        {word:"come down with", phonetic:"/kʌm daʊn wɪð/", meaning:"병에 걸리다", example:"I think I\'m coming down with a cold."},
+        {word:"come in", phonetic:"/kʌm ɪn/", meaning:"들어오다 / 도착하다", example:"Come in — the door is open."},
+        {word:"come around", phonetic:"/kʌm əˈraʊnd/", meaning:"입장을 바꾸다 / 들르다", example:"He\'ll come around to our way of thinking."},
+        {word:"come off", phonetic:"/kʌm ɒf/", meaning:"떨어지다 / 성공하다", example:"The button came off my shirt."},
+        {word:"come forward", phonetic:"/kʌm ˈfɔːrwərd/", meaning:"나서다 / 자수하다", example:"Did anyone come forward as a witness?"},
+      ]
+    },
+    {
+      id:'phrasal2', name:'구동사 기초2', icon:'📗', color:'green',
+      words:[
+        {word:"take off", phonetic:"/teɪk ɒf/", meaning:"이륙하다 / 벗다 / 급성장하다", example:"The plane takes off at noon."},
+        {word:"take on", phonetic:"/teɪk ɒn/", meaning:"맡다 / 고용하다", example:"She took on too much work at once."},
+        {word:"take over", phonetic:"/teɪk ˈoʊvər/", meaning:"인수하다 / 대신하다", example:"He took over the company from his father."},
+        {word:"take up", phonetic:"/teɪk ʌp/", meaning:"시작하다 / 차지하다", example:"I took up running to stay healthy."},
+        {word:"take out", phonetic:"/teɪk aʊt/", meaning:"꺼내다 / 데리고 나가다", example:"Can you take out the trash, please?"},
+        {word:"take back", phonetic:"/teɪk bæk/", meaning:"돌려받다 / 취소하다", example:"I take back what I said — I was wrong."},
+        {word:"take in", phonetic:"/teɪk ɪn/", meaning:"받아들이다 / 이해하다", example:"There was so much to take in on the first day."},
+        {word:"take after", phonetic:"/teɪk ˈɑːftər/", meaning:"닮다", example:"She really takes after her mother."},
+        {word:"take apart", phonetic:"/teɪk əˈpɑːrt/", meaning:"분해하다", example:"He took apart the machine to fix it."},
+        {word:"take down", phonetic:"/teɪk daʊn/", meaning:"내리다 / 적다", example:"Please take down your name and number."},
+        {word:"put off", phonetic:"/pʊt ɒf/", meaning:"미루다", example:"Don\'t put off until tomorrow what you can do today."},
+        {word:"put on", phonetic:"/pʊt ɒn/", meaning:"입다 / 켜다 / 연기하다", example:"Put on your jacket — it\'s cold outside."},
+        {word:"put up", phonetic:"/pʊt ʌp/", meaning:"올리다 / 묵다 / 참다", example:"We put up some shelves in the living room."},
+        {word:"put together", phonetic:"/pʊt təˈɡɛðər/", meaning:"조립하다 / 정리하다", example:"Can you put together a report by Friday?"},
+        {word:"put out", phonetic:"/pʊt aʊt/", meaning:"끄다 / 내놓다", example:"Please put out your cigarette."},
+        {word:"put down", phonetic:"/pʊt daʊn/", meaning:"내려놓다 / 비하하다", example:"Don\'t put yourself down — you did great."},
+        {word:"put away", phonetic:"/pʊt əˈweɪ/", meaning:"치우다 / 저축하다", example:"Put away your phone during dinner."},
+        {word:"put forward", phonetic:"/pʊt ˈfɔːrwərd/", meaning:"제안하다", example:"She put forward an interesting proposal."},
+        {word:"look up", phonetic:"/lʊk ʌp/", meaning:"검색하다 / 올려다보다 / 나아지다", example:"Look it up on the internet."},
+        {word:"look into", phonetic:"/lʊk ˈɪntə/", meaning:"조사하다", example:"The police are looking into the matter."},
+        {word:"look after", phonetic:"/lʊk ˈɑːftər/", meaning:"돌보다", example:"Can you look after the kids this evening?"},
+        {word:"look forward to", phonetic:"/lʊk ˈfɔːrwərd tə/", meaning:"기대하다", example:"I\'m really looking forward to the trip."},
+        {word:"look out", phonetic:"/lʊk aʊt/", meaning:"조심하다", example:"Look out! There\'s a car coming."},
+        {word:"look over", phonetic:"/lʊk ˈoʊvər/", meaning:"검토하다", example:"Can you look over my report before I submit it?"},
+        {word:"look back", phonetic:"/lʊk bæk/", meaning:"돌이켜보다", example:"Looking back, I made the right decision."},
+        {word:"look down on", phonetic:"/lʊk daʊn ɒn/", meaning:"무시하다", example:"Don\'t look down on people who earn less."},
+        {word:"look up to", phonetic:"/lʊk ʌp tə/", meaning:"존경하다", example:"I\'ve always looked up to my older sister."},
+        {word:"look through", phonetic:"/lʊk θruː/", meaning:"훑어보다", example:"I looked through the documents quickly."},
+        {word:"look like", phonetic:"/lʊk laɪk/", meaning:"~처럼 보이다", example:"It looks like it might rain today."},
+        {word:"look around", phonetic:"/lʊk əˈraʊnd/", meaning:"둘러보다", example:"Let\'s look around the market before lunch."},
+      ]
+    },
+    {
+      id:'phrasal3', name:'구동사 중급1', icon:'📘', color:'blue',
+      words:[
+        {word:"make up", phonetic:"/meɪk ʌp/", meaning:"화해하다 / 구성하다 / 꾸며내다", example:"They fought but made up the next day."},
+        {word:"make out", phonetic:"/meɪk aʊt/", meaning:"이해하다 / 잘 되다", example:"I can\'t make out what he\'s saying."},
+        {word:"make up for", phonetic:"/meɪk ʌp fər/", meaning:"보상하다", example:"I\'ll make up for missing your birthday."},
+        {word:"make off", phonetic:"/meɪk ɒf/", meaning:"도망가다", example:"The thief made off with my laptop."},
+        {word:"make do", phonetic:"/meɪk duː/", meaning:"그럭저럭 해나가다", example:"We\'ll have to make do with what we have."},
+        {word:"make for", phonetic:"/meɪk fɔːr/", meaning:"~로 향하다 / ~에 도움이 되다", example:"We made for the exit as quickly as possible."},
+        {word:"make it", phonetic:"/meɪk ɪt/", meaning:"성공하다 / 도착하다 / 참석하다", example:"She made it to the top of her field."},
+        {word:"make sense", phonetic:"/meɪk sɛns/", meaning:"이해가 되다 / 타당하다", example:"Does this explanation make sense to you?"},
+        {word:"make the most of", phonetic:"/meɪk ðə moʊst əv/", meaning:"최대한 활용하다", example:"Let\'s make the most of our time here."},
+        {word:"break up", phonetic:"/breɪk ʌp/", meaning:"헤어지다 / 해체되다", example:"They broke up after three years together."},
+        {word:"break down", phonetic:"/breɪk daʊn/", meaning:"고장나다 / 무너지다 / 분석하다", example:"My car broke down on the highway."},
+        {word:"break out", phonetic:"/breɪk aʊt/", meaning:"발생하다 / 탈출하다", example:"A fire broke out in the building."},
+        {word:"break in", phonetic:"/breɼk ɪn/", meaning:"침입하다 / 길들이다", example:"Someone broke in while we were away."},
+        {word:"break off", phonetic:"/breɪk ɒf/", meaning:"끊다 / 중단하다", example:"They broke off the negotiations."},
+        {word:"break through", phonetic:"/breɪk θruː/", meaning:"돌파하다", example:"The sun finally broke through the clouds."},
+        {word:"break even", phonetic:"/breɪk ˈiːvən/", meaning:"본전치기하다", example:"We just need to break even this quarter."},
+        {word:"run out of", phonetic:"/rʌn aʊt əv/", meaning:"다 떨어지다", example:"We ran out of coffee — can you get more?"},
+        {word:"run into", phonetic:"/rʌn ˈɪntə/", meaning:"우연히 만나다 / 부딪히다", example:"I ran into my old teacher at the mall."},
+        {word:"run away", phonetic:"/rʌn əˈweɪ/", meaning:"도망가다", example:"Don\'t run away from your problems."},
+        {word:"run over", phonetic:"/rʌn ˈoʊvər/", meaning:"치다 / 검토하다 / 초과하다", example:"Let\'s run over the plan one more time."},
+        {word:"run through", phonetic:"/rʌn θruː/", meaning:"빠르게 검토하다 / 탕진하다", example:"Can we run through the agenda quickly?"},
+        {word:"run up", phonetic:"/rʌn ʌp/", meaning:"쌓아올리다 / 빠르게 만들다", example:"She ran up a huge credit card bill."},
+        {word:"run off", phonetic:"/rʌn ɒf/", meaning:"도망가다 / 인쇄하다", example:"Can you run off 20 copies of this?"},
+        {word:"run along", phonetic:"/rʌn əˈlɒŋ/", meaning:"가다 (아이에게)", example:"Run along now — dinner\'s almost ready."},
+        {word:"run down", phonetic:"/rʌn daʊn/", meaning:"배터리가 닳다 / 헐뜯다", example:"My phone battery is running down."},
+        {word:"run across", phonetic:"/rʌn əˈkrɒs/", meaning:"우연히 발견하다", example:"I ran across an interesting article today."},
+        {word:"run behind", phonetic:"/rʌn bɪˈhaɪnd/", meaning:"늦어지다", example:"Sorry, I\'m running behind — give me 5 minutes."},
+        {word:"run by", phonetic:"/rʌn baɪ/", meaning:"확인받다", example:"Let me run this idea by the team first."},
+        {word:"run short", phonetic:"/rʌn ʃɔːrt/", meaning:"부족해지다", example:"We\'re running short on time."},
+        {word:"run for", phonetic:"/rʌn fɔːr/", meaning:"출마하다", example:"She\'s running for city council next year."},
+      ]
+    },
+    {
+      id:'phrasal4', name:'구동사 중급2', icon:'📘', color:'blue',
+      words:[
+        {word:"turn up", phonetic:"/tɜːrn ʌp/", meaning:"나타나다 / 볼륨을 높이다", example:"He turned up late to the meeting again."},
+        {word:"turn down", phonetic:"/tɜːrn daʊn/", meaning:"거절하다 / 볼륨을 낮추다", example:"She turned down the job offer."},
+        {word:"turn off", phonetic:"/tɜːrn ɒf/", meaning:"끄다 / 흥미를 잃게 하다", example:"Turn off the lights when you leave."},
+        {word:"turn on", phonetic:"/tɜːrn ɒn/", meaning:"켜다", example:"Turn on the TV — the game is starting."},
+        {word:"turn over", phonetic:"/tɜːrn ˈoʊvər/", meaning:"뒤집다 / 넘기다", example:"Turn over the page to see the answers."},
+        {word:"turn out", phonetic:"/tɜːrn aʊt/", meaning:"결과가 ~되다 / 나타나다", example:"The party turned out to be a great success."},
+        {word:"turn around", phonetic:"/tɜːrn əˈraʊnd/", meaning:"돌아서다 / 회복시키다", example:"We need to turn this company around."},
+        {word:"turn into", phonetic:"/tɜːrn ˈɪntə/", meaning:"변하다", example:"The caterpillar turned into a butterfly."},
+        {word:"turn back", phonetic:"/tɜːrn bæk/", meaning:"돌아가다", example:"It\'s too late to turn back now."},
+        {word:"turn away", phonetic:"/tɜːrn əˈweɪ/", meaning:"외면하다 / 돌려보내다", example:"They turned away hundreds of applicants."},
+        {word:"give up", phonetic:"/ɡɪv ʌp/", meaning:"포기하다", example:"Never give up on your dreams."},
+        {word:"give in", phonetic:"/ɡɪv ɪn/", meaning:"항복하다 / 굴복하다", example:"After hours of arguing, he gave in."},
+        {word:"give out", phonetic:"/ɡɪv aʊt/", meaning:"나눠주다 / 방출하다 / 고장나다", example:"They gave out free samples at the store."},
+        {word:"give back", phonetic:"/ɡɪv bæk/", meaning:"돌려주다", example:"Don\'t forget to give back the book you borrowed."},
+        {word:"give away", phonetic:"/ɡɪv əˈweɪ/", meaning:"나눠주다 / 비밀을 누설하다", example:"She gave away all her old clothes."},
+        {word:"give off", phonetic:"/ɡɪv ɒf/", meaning:"방출하다 / 발산하다", example:"The flowers give off a wonderful scent."},
+        {word:"bring up", phonetic:"/brɪŋ ʌp/", meaning:"키우다 / 꺼내다", example:"She was brought up in a small town."},
+        {word:"bring about", phonetic:"/brɪŋ əˈbaʊt/", meaning:"일으키다", example:"What brought about this sudden change?"},
+        {word:"bring back", phonetic:"/brɪŋ bæk/", meaning:"되돌리다 / 다시 생각나게 하다", example:"That song brings back so many memories."},
+        {word:"bring down", phonetic:"/brɪŋ daʊn/", meaning:"낮추다 / 무너뜨리다", example:"We need to bring down the prices."},
+        {word:"bring in", phonetic:"/brɪŋ ɪn/", meaning:"데려오다 / 수입을 올리다", example:"They brought in a new consultant."},
+        {word:"bring out", phonetic:"/brɪŋ aʊt/", meaning:"드러내다 / 출시하다", example:"Travel brings out the best in people."},
+        {word:"bring forward", phonetic:"/brɪŋ ˈfɔːrwərd/", meaning:"앞당기다 / 제안하다", example:"Can we bring forward the meeting to Monday?"},
+        {word:"bring together", phonetic:"/brɪŋ təˈɡɛðər/", meaning:"한데 모으다", example:"Music has a way of bringing people together."},
+        {word:"bring along", phonetic:"/brɪŋ əˈlɒŋ/", meaning:"데리고 오다 / 가져오다", example:"Bring along a friend if you\'d like."},
+        {word:"bring off", phonetic:"/brɪŋ ɒf/", meaning:"성공하다", example:"I can\'t believe they brought off that deal."},
+        {word:"bring round", phonetic:"/brɪŋ raʊnd/", meaning:"의식을 되찾게 하다 / 설득하다", example:"The doctors brought him round after surgery."},
+        {word:"bring on", phonetic:"/brɪŋ ɒn/", meaning:"야기하다 / 시작하다", example:"What brought on this sudden headache?"},
+        {word:"bring to", phonetic:"/brɪŋ tuː/", meaning:"의식을 되찾게 하다", example:"Cold water brought him to after fainting."},
+        {word:"bring across", phonetic:"/brɪŋ əˈkrɒs/", meaning:"전달하다", example:"The speech brought across a powerful message."},
+      ]
+    },
+    {
+      id:'phrasal5', name:'구동사 중급3', icon:'📘', color:'blue',
+      words:[
+        {word:"hold on", phonetic:"/hoʊld ɒn/", meaning:"기다리다 / 버티다", example:"Hold on — let me check my calendar."},
+        {word:"hold off", phonetic:"/hoʊld ɒf/", meaning:"미루다 / 억제하다", example:"Let\'s hold off on the decision for now."},
+        {word:"hold up", phonetic:"/hoʊld ʌp/", meaning:"지연시키다 / 강도질하다 / 버티다", example:"Sorry I\'m late — I was held up in traffic."},
+        {word:"hold back", phonetic:"/hoʊld bæk/", meaning:"억제하다 / 숨기다", example:"Don\'t hold back — say what you really think."},
+        {word:"hold out", phonetic:"/hoʊld aʊt/", meaning:"버티다 / 내밀다", example:"How long can we hold out without supplies?"},
+        {word:"hold together", phonetic:"/hoʊld təˈɡɛðər/", meaning:"유지하다 / 단결시키다", example:"She held the team together during the crisis."},
+        {word:"hold down", phonetic:"/hoʊld daʊn/", meaning:"직업을 유지하다 / 눌러두다", example:"It\'s hard to hold down a job and study."},
+        {word:"hold over", phonetic:"/hoʊld ˈoʊvər/", meaning:"연장하다", example:"The concert was held over due to demand."},
+        {word:"keep up", phonetic:"/kiːp ʌp/", meaning:"유지하다 / 따라가다", example:"Keep up the good work — you\'re doing great."},
+        {word:"keep on", phonetic:"/kiːp ɒn/", meaning:"계속하다", example:"Keep on trying — don\'t give up."},
+        {word:"keep out", phonetic:"/kiːp aʊt/", meaning:"들어오지 못하게 하다", example:"Keep out of the restricted area."},
+        {word:"keep away", phonetic:"/kiːp əˈweɪ/", meaning:"가까이 오지 않다", example:"Keep away from the edge — it\'s dangerous."},
+        {word:"keep back", phonetic:"/kiːp bæk/", meaning:"물러서다 / 숨기다", example:"Please keep back from the scene."},
+        {word:"keep down", phonetic:"/kiːp daʊn/", meaning:"낮추다 / 억제하다", example:"Keep your voice down — people are sleeping."},
+        {word:"keep up with", phonetic:"/kiːp ʌp wɪð/", meaning:"따라가다 / 최신 정보를 알다", example:"It\'s hard to keep up with technology."},
+        {word:"set up", phonetic:"/sɛt ʌp/", meaning:"설치하다 / 설립하다", example:"Can you set up the projector for the meeting?"},
+        {word:"set off", phonetic:"/sɛt ɒf/", meaning:"출발하다 / 작동시키다", example:"We set off early to avoid the traffic."},
+        {word:"set out", phonetic:"/sɛt aʊt/", meaning:"출발하다 / 시작하다", example:"He set out to change the world."},
+        {word:"set back", phonetic:"/sɛt bæk/", meaning:"지연시키다 / 손해를 끼치다", example:"The storm set back the construction by weeks."},
+        {word:"set aside", phonetic:"/sɛt əˈsaɪd/", meaning:"따로 두다 / 제쳐두다", example:"Set aside some money for emergencies."},
+        {word:"set in", phonetic:"/sɛt ɪn/", meaning:"시작되다 (부정적)", example:"Winter has really set in now."},
+        {word:"set down", phonetic:"/sɛt daʊn/", meaning:"내려놓다 / 적다", example:"Set down the bags here for now."},
+        {word:"set free", phonetic:"/sɛt friː/", meaning:"해방시키다", example:"They set the prisoners free after the pardon."},
+        {word:"set against", phonetic:"/sɛt əˈɡɛnst/", meaning:"반대하게 만들다", example:"Don\'t let one bad experience set you against travel."},
+        {word:"set about", phonetic:"/sɛt əˈbaʊt/", meaning:"시작하다", example:"She set about cleaning the house immediately."},
+        {word:"set apart", phonetic:"/sɛt əˈpɑːrt/", meaning:"구별하다", example:"Her creativity sets her apart from others."},
+        {word:"set on", phonetic:"/sɛt ɒn/", meaning:"결심하다 / 공격하다", example:"Once he\'s set on an idea, nothing stops him."},
+        {word:"set up for", phonetic:"/sɛt ʌp fɔːr/", meaning:"준비시키다", example:"This training will set you up for success."},
+        {word:"set the scene", phonetic:"/sɛt ðə siːn/", meaning:"분위기를 조성하다", example:"The music set the scene for a romantic evening."},
+        {word:"set the record straight", phonetic:"/sɛt ðə ˈrɛkərd streɪt/", meaning:"사실을 바로잡다", example:"Let me set the record straight about what happened."},
+      ]
+    },
+    {
+      id:'phrasal6', name:'구동사 고급1', icon:'📙', color:'orange',
+      words:[
+        {word:"fall apart", phonetic:"/fɔːl əˈpɑːrt/", meaning:"산산조각 나다 / 무너지다", example:"Everything fell apart after he left."},
+        {word:"fall behind", phonetic:"/fɔːl bɪˈhaɪnd/", meaning:"뒤처지다", example:"I fell behind in my studies during the holidays."},
+        {word:"fall out", phonetic:"/fɔːl aʊt/", meaning:"다투다 / 빠지다", example:"They fell out over money."},
+        {word:"fall through", phonetic:"/fɔːl θruː/", meaning:"무산되다", example:"The deal fell through at the last minute."},
+        {word:"fall for", phonetic:"/fɔːl fɔːr/", meaning:"속아 넘어가다 / 사랑에 빠지다", example:"I totally fell for his story — he lied."},
+        {word:"fall back on", phonetic:"/fɔːl bæk ɒn/", meaning:"의지하다", example:"When things go wrong, I fall back on my savings."},
+        {word:"fall in with", phonetic:"/fɔːl ɪn wɪð/", meaning:"어울리다 / 동의하다", example:"He fell in with the wrong crowd."},
+        {word:"fall short", phonetic:"/fɔːl ʃɔːrt/", meaning:"부족하다", example:"Our fundraising fell short of the target."},
+        {word:"fall over", phonetic:"/fɔːl ˈoʊvər/", meaning:"넘어지다", example:"Be careful — don\'t fall over the step."},
+        {word:"call off", phonetic:"/kɔːl ɒf/", meaning:"취소하다", example:"They called off the match due to rain."},
+        {word:"call up", phonetic:"/kɔːl ʌp/", meaning:"전화하다 / 소환하다", example:"Call me up when you get there safely."},
+        {word:"call out", phonetic:"/kɔːl aʊt/", meaning:"부르다 / 지적하다", example:"He called out the manager for his behavior."},
+        {word:"call for", phonetic:"/kɔːl fɔːr/", meaning:"요구하다 / 필요로 하다", example:"This situation calls for immediate action."},
+        {word:"call in", phonetic:"/kɔːl ɪn/", meaning:"전화로 알리다 / 불러들이다", example:"She called in sick this morning."},
+        {word:"call back", phonetic:"/kɔːl bæk/", meaning:"다시 전화하다 / 리콜하다", example:"I\'ll call you back in ten minutes."},
+        {word:"cut off", phonetic:"/kʌt ɒf/", meaning:"차단하다 / 끊다", example:"They cut off the electricity."},
+        {word:"cut down", phonetic:"/kʌt daʊn/", meaning:"줄이다 / 베어 넘어뜨리다", example:"You should cut down on sugar."},
+        {word:"cut out", phonetic:"/kʌt aʊt/", meaning:"잘라내다 / 그만두다", example:"Cut out the junk food — it\'s bad for you."},
+        {word:"cut in", phonetic:"/kʌt ɪn/", meaning:"끼어들다", example:"Don\'t cut in line — wait your turn."},
+        {word:"cut back", phonetic:"/kʌt bæk/", meaning:"삭감하다", example:"The company had to cut back on staff."},
+        {word:"cut across", phonetic:"/kʌt əˈkrɒs/", meaning:"지름길로 가다 / 가로지르다", example:"Let\'s cut across the park to save time."},
+        {word:"cut through", phonetic:"/kʌt θruː/", meaning:"관통하다 / 단숨에 해결하다", example:"She cut through the confusion with one clear answer."},
+        {word:"cut short", phonetic:"/kʌt ʃɔːrt/", meaning:"갑자기 끝내다", example:"The speech was cut short by the fire alarm."},
+        {word:"cut loose", phonetic:"/kʌt luːs/", meaning:"자유롭게 하다 / 마음껏 즐기다", example:"It\'s Friday — let\'s cut loose tonight!"},
+        {word:"cut ties", phonetic:"/kʌt taɪz/", meaning:"관계를 끊다", example:"She cut ties with her toxic friends."},
+        {word:"cut corners", phonetic:"/kʌt ˈkɔːrnərz/", meaning:"날림으로 하다", example:"Don\'t cut corners on safety procedures."},
+        {word:"cut to the chase", phonetic:"/kʌt tə ðə tʃeɪs/", meaning:"핵심만 말하다", example:"Let\'s cut to the chase — what do you want?"},
+        {word:"cut a deal", phonetic:"/kʌt ə diːl/", meaning:"거래하다", example:"They cut a deal that benefited both sides."},
+        {word:"cut it close", phonetic:"/kʌt ɪt kloʊs/", meaning:"아슬아슬하게 하다", example:"We cut it close — the train left just as we arrived."},
+        {word:"cut the mustard", phonetic:"/kʌt ðə ˈmʌstərd/", meaning:"기준에 맞다 / 잘 해내다", example:"If he can\'t cut the mustard, we\'ll find someone else."},
+      ]
+    },
+    {
+      id:'phrasal7', name:'구동사 고급2', icon:'📙', color:'orange',
+      words:[
+        {word:"pick up", phonetic:"/pɪk ʌp/", meaning:"집다 / 태우다 / 배우다 / 나아지다", example:"Can you pick me up at the airport?"},
+        {word:"pick out", phonetic:"/pɪk aʊt/", meaning:"고르다 / 식별하다", example:"Pick out the one you like best."},
+        {word:"pick on", phonetic:"/pɪk ɒn/", meaning:"괴롭히다", example:"Stop picking on your little brother."},
+        {word:"pick off", phonetic:"/pɪk ɒf/", meaning:"하나씩 처리하다", example:"Let\'s pick off these tasks one by one."},
+        {word:"pick apart", phonetic:"/pɪk əˈpɑːrt/", meaning:"분석하다 / 흠잡다", example:"The critics picked apart every scene of the film."},
+        {word:"pick over", phonetic:"/pɪk ˈoʊvər/", meaning:"면밀히 살피다", example:"She picked over every detail of the contract."},
+        {word:"carry on", phonetic:"/ˈkæri ɒn/", meaning:"계속하다", example:"Carry on — don\'t let me interrupt you."},
+        {word:"carry out", phonetic:"/ˈkæri aʊt/", meaning:"수행하다 / 실행하다", example:"We need to carry out the plan as discussed."},
+        {word:"carry off", phonetic:"/ˈkæri ɒf/", meaning:"성공하다 / 훔쳐가다", example:"She really carried off the performance."},
+        {word:"carry over", phonetic:"/ˈkæri ˈoʊvər/", meaning:"이월하다 / 계속되다", example:"The budget was carried over to next quarter."},
+        {word:"carry through", phonetic:"/ˈkæri θruː/", meaning:"완수하다 / 버티게 하다", example:"Her determination carried her through the hard times."},
+        {word:"carry away", phonetic:"/ˈkæri əˈweɪ/", meaning:"흥분하다 / 감동시키다", example:"Don\'t get carried away — stay focused."},
+        {word:"pull off", phonetic:"/pʊl ɒf/", meaning:"해내다 / 길가에 세우다", example:"I can\'t believe he pulled off that trick."},
+        {word:"pull through", phonetic:"/pʊl θruː/", meaning:"극복하다 / 회복하다", example:"The doctors say she\'ll pull through."},
+        {word:"pull out", phonetic:"/pʊl aʊt/", meaning:"철수하다 / 꺼내다", example:"The troops pulled out of the region."},
+        {word:"pull over", phonetic:"/pʊl ˈoʊvər/", meaning:"차를 세우다", example:"The police asked him to pull over."},
+        {word:"pull together", phonetic:"/pʊl təˈɡɛðər/", meaning:"협력하다 / 마음을 가다듬다", example:"We need to pull together as a team."},
+        {word:"pull apart", phonetic:"/pʊl əˈpɑːrt/", meaning:"떼어내다 / 비판하다", example:"The referee pulled the fighters apart."},
+        {word:"pull back", phonetic:"/pʊl bæk/", meaning:"물러서다 / 자제하다", example:"She pulled back from the relationship."},
+        {word:"pull ahead", phonetic:"/pʊl əˈhɛd/", meaning:"앞서 나가다", example:"Our team pulled ahead in the final quarter."},
+        {word:"pull in", phonetic:"/pʊl ɪn/", meaning:"도착하다 / 벌다", example:"The train pulled in right on time."},
+        {word:"pull down", phonetic:"/pʊl daʊn/", meaning:"허물다 / 낮추다", example:"They\'re pulling down the old building."},
+        {word:"pull up", phonetic:"/pʊl ʌp/", meaning:"차를 세우다 / 검색하다", example:"Pull up the directions on your phone."},
+        {word:"pull strings", phonetic:"/pʊl strɪŋz/", meaning:"연줄을 이용하다", example:"He pulled strings to get the job."},
+        {word:"pull weight", phonetic:"/pʊl weɪt/", meaning:"자기 몫을 하다", example:"Everyone needs to pull their weight on this project."},
+        {word:"pull a fast one", phonetic:"/pʊl ə fɑːst wʌn/", meaning:"속이다", example:"Don\'t try to pull a fast one on me."},
+        {word:"pull the plug", phonetic:"/pʊl ðə plʌɡ/", meaning:"중단하다", example:"They pulled the plug on the project."},
+        {word:"pull no punches", phonetic:"/pʊl noʊ ˈpʌntʃɪz/", meaning:"직설적으로 말하다", example:"She pulls no punches when giving feedback."},
+        {word:"pull yourself together", phonetic:"/pʊl jərˈsɛlf təˈɡɛðər/", meaning:"마음을 가다듬다", example:"Pull yourself together — you can do this."},
+        {word:"pull in a crowd", phonetic:"/pʊl ɪn ə kraʊd/", meaning:"관중을 모으다", example:"The concert pulled in a huge crowd."},
+      ]
+    },
+    {
+      id:'phrasal8', name:'구동사 고급3', icon:'📙', color:'orange',
+      words:[
+        {word:"work out", phonetic:"/wɜːrk aʊt/", meaning:"운동하다 / 해결하다 / 잘 되다", example:"Things will work out in the end."},
+        {word:"work on", phonetic:"/wɜːrk ɒn/", meaning:"~에 집중하다 / 개선하다", example:"I\'ve been working on my English pronunciation."},
+        {word:"work up", phonetic:"/wɜːrk ʌp/", meaning:"감정을 고조시키다 / 서서히 늘리다", example:"I worked up the courage to ask her out."},
+        {word:"work through", phonetic:"/wɜːrk θruː/", meaning:"해결하다 / 처리하다", example:"It takes time to work through grief."},
+        {word:"work off", phonetic:"/wɜːrk ɒf/", meaning:"일로 갚다 / 발산하다", example:"I worked off my stress at the gym."},
+        {word:"work around", phonetic:"/wɜːrk əˈraʊnd/", meaning:"우회하다 / 맞추다", example:"We\'ll work around your schedule."},
+        {word:"work against", phonetic:"/wɜːrk əˈɡɛnst/", meaning:"불리하게 작용하다", example:"Time is working against us."},
+        {word:"work in", phonetic:"/wɜːrk ɪn/", meaning:"끼워 넣다 / 참여시키다", example:"Can you work in a coffee break somewhere?"},
+        {word:"move on", phonetic:"/muːv ɒn/", meaning:"앞으로 나아가다 / 잊다", example:"It\'s time to move on from the past."},
+        {word:"move in", phonetic:"/muːv ɪn/", meaning:"이사 들어오다", example:"When are you moving in to the new apartment?"},
+        {word:"move out", phonetic:"/muːv aʊt/", meaning:"이사 나가다", example:"She moved out of her parents\' house last year."},
+        {word:"move up", phonetic:"/muːv ʌp/", meaning:"승진하다 / 앞당기다", example:"She moved up quickly in the company."},
+        {word:"move forward", phonetic:"/muːv ˈfɔːrwərd/", meaning:"앞으로 나아가다", example:"Let\'s move forward with the original plan."},
+        {word:"move away", phonetic:"/muːv əˈweɪ/", meaning:"이사 가다 / 멀리하다", example:"They moved away to the countryside."},
+        {word:"stand up", phonetic:"/stænd ʌp/", meaning:"일어서다 / 바람맞히다", example:"He stood her up on their first date."},
+        {word:"stand out", phonetic:"/stænd aʊt/", meaning:"눈에 띄다", example:"Her red dress made her stand out."},
+        {word:"stand by", phonetic:"/stænd baɪ/", meaning:"지지하다 / 대기하다", example:"I\'ll always stand by you, no matter what."},
+        {word:"stand for", phonetic:"/stænd fɔːr/", meaning:"대표하다 / 참다", example:"What does this acronym stand for?"},
+        {word:"stand up for", phonetic:"/stænd ʌp fɔːr/", meaning:"옹호하다", example:"You need to stand up for yourself."},
+        {word:"stand down", phonetic:"/stænd daʊn/", meaning:"물러서다 / 사임하다", example:"The soldier was ordered to stand down."},
+        {word:"stand in for", phonetic:"/stænd ɪn fɔːr/", meaning:"대신하다", example:"Can you stand in for me at the meeting?"},
+        {word:"stand against", phonetic:"/stænd əˈɡɛnst/", meaning:"반대하다", example:"She stood against the new policy."},
+        {word:"stand aside", phonetic:"/stænd əˈsaɪd/", meaning:"비켜서다 / 물러나다", example:"Please stand aside and let them pass."},
+        {word:"stand up to", phonetic:"/stænd ʌp tə/", meaning:"맞서다", example:"It takes courage to stand up to bullies."},
+        {word:"stand firm", phonetic:"/stænd fɜːrm/", meaning:"입장을 고수하다", example:"Stand firm on your decision."},
+        {word:"stand tall", phonetic:"/stænd tɔːl/", meaning:"당당하게 서다", example:"Stand tall and be proud of what you\'ve achieved."},
+        {word:"stand corrected", phonetic:"/stænd kəˈrɛktɪd/", meaning:"틀렸음을 인정하다", example:"I stand corrected — you were right."},
+        {word:"stand on ceremony", phonetic:"/stænd ɒn ˈsɛrɪməni/", meaning:"격식을 차리다", example:"Please don\'t stand on ceremony — make yourself at home."},
+        {word:"stand one\'s ground", phonetic:"/stænd wʌnz ɡraʊnd/", meaning:"입장을 지키다", example:"He stood his ground despite the pressure."},
+        {word:"stand a chance", phonetic:"/stænd ə tʃɑːns/", meaning:"가능성이 있다", example:"With hard work, you stand a chance of winning."},
+      ]
+    },
+    {
+      id:'phrasal9', name:'구동사 고급4', icon:'📙', color:'orange',
+      words:[
+        {word:"throw away", phonetic:"/θroʊ əˈweɪ/", meaning:"버리다 / 낭비하다", example:"Don\'t throw away your chance at success."},
+        {word:"throw out", phonetic:"/θroʊ aʊt/", meaning:"내버리다 / 퇴장시키다", example:"The judge threw out the case."},
+        {word:"throw up", phonetic:"/θroʊ ʌp/", meaning:"구토하다 / 포기하다", example:"The smell made me want to throw up."},
+        {word:"throw in", phonetic:"/θroʊ ɪn/", meaning:"덤으로 주다 / 포기하다", example:"They threw in a free gift with the purchase."},
+        {word:"throw off", phonetic:"/θroʊ ɒf/", meaning:"방해하다 / 벗어나다", example:"The noise threw off my concentration."},
+        {word:"throw together", phonetic:"/θroʊ təˈɡɛðər/", meaning:"급히 만들다", example:"I threw together a quick dinner."},
+        {word:"throw back", phonetic:"/θroʊ bæk/", meaning:"돌려주다 / 되돌리다", example:"Throw back the fish — it\'s too small."},
+        {word:"throw around", phonetic:"/θroʊ əˈraʊnd/", meaning:"함부로 쓰다 / 던지다", example:"Don\'t throw around accusations."},
+        {word:"hang on", phonetic:"/hæŋ ɒn/", meaning:"기다리다 / 버티다", example:"Hang on — I\'ll be right back."},
+        {word:"hang up", phonetic:"/hæŋ ʌp/", meaning:"전화를 끊다 / 걸다", example:"She hung up without saying goodbye."},
+        {word:"hang out", phonetic:"/hæŋ aʊt/", meaning:"어울리다 / 시간을 보내다", example:"Let\'s hang out this weekend."},
+        {word:"hang back", phonetic:"/hæŋ bæk/", meaning:"주저하다 / 뒤처지다", example:"Don\'t hang back — join the conversation."},
+        {word:"hang around", phonetic:"/hæŋ əˈraʊnd/", meaning:"서성이다 / 기다리다", example:"Stop hanging around and do something useful."},
+        {word:"hang in there", phonetic:"/hæŋ ɪn ðɛr/", meaning:"버텨라", example:"Hang in there — it\'ll get better soon."},
+        {word:"show up", phonetic:"/ʃoʊ ʌp/", meaning:"나타나다", example:"She showed up two hours late."},
+        {word:"show off", phonetic:"/ʃoʊ ɒf/", meaning:"과시하다", example:"He\'s always showing off his new car."},
+        {word:"show around", phonetic:"/ʃoʊ əˈraʊnd/", meaning:"안내하다", example:"Let me show you around the office."},
+        {word:"show out", phonetic:"/ʃoʊ aʊt/", meaning:"배웅하다", example:"The receptionist showed him out."},
+        {word:"show through", phonetic:"/ʃoʊ θruː/", meaning:"드러나다", example:"Her true feelings showed through."},
+        {word:"show of hands", phonetic:"/ʃoʊ əv hændz/", meaning:"손들기 투표", example:"Raise your hand — a show of hands please."},
+        {word:"fill in", phonetic:"/fɪl ɪn/", meaning:"채우다 / 대신하다 / 알려주다", example:"Fill in the form completely."},
+        {word:"fill out", phonetic:"/fɪl aʊt/", meaning:"작성하다 / 살찌다", example:"Please fill out this application form."},
+        {word:"fill up", phonetic:"/fɪl ʌp/", meaning:"가득 채우다", example:"Fill up the tank — we have a long drive."},
+        {word:"fill in for", phonetic:"/fɪl ɪn fɔːr/", meaning:"대신하다", example:"Can you fill in for me on Thursday?"},
+        {word:"wind up", phonetic:"/waɪnd ʌp/", meaning:"결국 ~하게 되다 / 마무리하다", example:"We wound up staying until midnight."},
+        {word:"wind down", phonetic:"/waɪnd daʊn/", meaning:"서서히 끝나다 / 긴장을 풀다", example:"I like to wind down with a good book."},
+        {word:"wrap up", phonetic:"/ræp ʌp/", meaning:"마무리하다 / 완성하다", example:"Let\'s wrap up the meeting — we\'re running late."},
+        {word:"wrap around", phonetic:"/ræp əˈraʊnd/", meaning:"감싸다", example:"She wrapped a scarf around her neck."},
+        {word:"zone out", phonetic:"/zoʊn aʊt/", meaning:"딴 생각에 빠지다", example:"Sorry — I zoned out for a second."},
+        {word:"zoom in", phonetic:"/zuːm ɪn/", meaning:"확대하다", example:"Zoom in on that detail in the photo."},
+      ]
+    },
+    {
+      id:'phrasal10', name:'구동사 고급5', icon:'📙', color:'orange',
+      words:[
+        {word:"bite off more than you can chew", phonetic:"/baɪt ɒf mɔːr ðæn juː kæn tʃuː/", meaning:"감당할 수 없는 걸 떠맡다", example:"I think I bit off more than I can chew with this project."},
+        {word:"hit the nail on the head", phonetic:"/hɪt ðə neɪl ɒn ðə hɛd/", meaning:"정확히 짚다", example:"You hit the nail on the head — that\'s exactly the problem."},
+        {word:"let the cat out of the bag", phonetic:"/lɛt ðə kæt aʊt əv ðə bæɡ/", meaning:"비밀을 누설하다", example:"Oops — I let the cat out of the bag about the surprise party."},
+        {word:"burn bridges", phonetic:"/bɜːrn ˈbrɪdʒɪz/", meaning:"관계를 끊다", example:"Don\'t burn bridges — you never know who you\'ll need."},
+        {word:"beat around the bush", phonetic:"/biːt əˈraʊnd ðə bʊʃ/", meaning:"둘러서 말하다", example:"Stop beating around the bush — tell me directly."},
+        {word:"spill the beans", phonetic:"/spɪl ðə biːnz/", meaning:"비밀을 말하다", example:"Who spilled the beans about the merger?"},
+        {word:"hit the sack", phonetic:"/hɪt ðə sæk/", meaning:"자다", example:"I\'m exhausted — I\'m going to hit the sack."},
+        {word:"kick the bucket", phonetic:"/kɪk ðə ˈbʌkɪt/", meaning:"죽다 (비격식)", example:"He kicked the bucket at the age of 90."},
+        {word:"under the weather", phonetic:"/ˈʌndər ðə ˈwɛðər/", meaning:"몸이 안 좋다", example:"I\'m feeling a bit under the weather today."},
+        {word:"bite the bullet", phonetic:"/baɪt ðə ˈbʊlɪt/", meaning:"고통을 감내하다", example:"Just bite the bullet and go to the dentist."},
+        {word:"break a leg", phonetic:"/breɪk ə lɛɡ/", meaning:"행운을 빌어요", example:"Break a leg at your audition tonight!"},
+        {word:"cost an arm and a leg", phonetic:"/kɒst ən ɑːrm ænd ə lɛɡ/", meaning:"엄청나게 비싸다", example:"That watch costs an arm and a leg."},
+        {word:"hit the road", phonetic:"/hɪt ðə roʊd/", meaning:"출발하다", example:"We\'d better hit the road — it\'s a long drive."},
+        {word:"piece of cake", phonetic:"/piːs əv keɪk/", meaning:"식은 죽 먹기", example:"The exam was a piece of cake."},
+        {word:"once in a blue moon", phonetic:"/wʌns ɪn ə bluː muːn/", meaning:"아주 가끔", example:"He visits once in a blue moon."},
+        {word:"the ball is in your court", phonetic:"/ðə bɔːl ɪz ɪn jər kɔːrt/", meaning:"네 차례야", example:"I\'ve made my offer — the ball is in your court."},
+        {word:"go back to square one", phonetic:"/ɡoʊ bæk tə skwɛr wʌn/", meaning:"처음으로 돌아가다", example:"The plan failed — we\'re back to square one."},
+        {word:"give someone the cold shoulder", phonetic:"/ɡɪv ˈsʌmwʌn ðə koʊld ˈʃoʊldər/", meaning:"쌀쌀맞게 대하다", example:"She gave me the cold shoulder at the party."},
+        {word:"hang in there", phonetic:"/hæŋ ɪn ðɛr/", meaning:"버텨라 / 힘내", example:"Hang in there — the worst is over."},
+        {word:"hit it off", phonetic:"/hɪt ɪt ɒf/", meaning:"금방 친해지다", example:"We hit it off immediately at the party."},
+        {word:"in the same boat", phonetic:"/ɪn ðə seɪm boʊt/", meaning:"같은 처지다", example:"We\'re all in the same boat here."},
+        {word:"kill two birds with one stone", phonetic:"/kɪl tuː bɜːrdz wɪð wʌn stoʊn/", meaning:"일석이조", example:"By meeting here, we kill two birds with one stone."},
+        {word:"let sleeping dogs lie", phonetic:"/lɛt ˈsliːpɪŋ dɒɡz laɪ/", meaning:"잠자는 사자를 건드리지 마라", example:"Don\'t bring it up again — let sleeping dogs lie."},
+        {word:"miss the boat", phonetic:"/mɪs ðə boʊt/", meaning:"기회를 놓치다", example:"If you don\'t apply now, you\'ll miss the boat."},
+        {word:"not my cup of tea", phonetic:"/nɒt maɪ kʌp əv tiː/", meaning:"내 취향이 아니다", example:"Horror movies are not my cup of tea."},
+        {word:"on the fence", phonetic:"/ɒn ðə fɛns/", meaning:"중립을 지키다 / 결정 못 하다", example:"I\'m still on the fence about changing jobs."},
+        {word:"spill over", phonetic:"/spɪl ˈoʊvər/", meaning:"넘치다 / 퍼지다", example:"The conflict spilled over into neighboring countries."},
+        {word:"take the bull by the horns", phonetic:"/teɪk ðə bʊl baɪ ðə hɔːrnz/", meaning:"어려움에 정면으로 맞서다", example:"Take the bull by the horns and address the problem."},
+        {word:"under the table", phonetic:"/ˈʌndər ðə ˈteɪbəl/", meaning:"비밀리에 / 불법으로", example:"The deal was made under the table."},
+        {word:"wrapped around your finger", phonetic:"/ræpt əˈraʊnd jər ˈfɪŋɡər/", meaning:"완전히 사로잡힌", example:"She has him wrapped around her finger."},
+      ]
+    },
+  ];
+
+  function getAll()     { return categories; }
+  function getById(id)  { return categories.find(c => c.id === id); }
+  function getAllWords() { return categories.flatMap(c => c.words.map(w => ({...w, categoryId: c.id}))); }
+
+  return { getAll, getById, getAllWords };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: Storage  — 학습 이력 & 연속정답 추적
+   진짜 완료 기준:
+     - 틀린 이력 없음  → 1번 알아요
+     - 틀린 이력 있음  → 3번 연속 알아요 (중간에 틀리면 리셋)
+════════════════════════════════════════════════════════ */
+const Storage = (() => {
+  const HIST_KEY     = 'wc_history';    // { word: { totalMiss, streak, mastered } }
+  const SESSION_KEY  = 'wc_sessions';   // [{ date, known, unknown, total }]
+  const THEME_KEY    = 'wc_theme';
+  let hist = {}, sessions = [];
+
+  function load() {
+    try { hist     = JSON.parse(localStorage.getItem(HIST_KEY)    || '{}'); } catch { hist = {}; }
+    try { sessions = JSON.parse(localStorage.getItem(SESSION_KEY) || '[]'); } catch { sessions = []; }
+  }
+  function saveHist()     { try { localStorage.setItem(HIST_KEY,    JSON.stringify(hist));     } catch {} }
+  function saveSessions() { try { localStorage.setItem(SESSION_KEY, JSON.stringify(sessions)); } catch {} }
+
+  // ── 학습 이력 ──
+  function get(word)      { return hist[word] || { totalMiss:0, streak:0, mastered:false }; }
+  function getMiss(word)  { return get(word).totalMiss; }
+  function getStreak(word){ return get(word).streak; }
+  function isMastered(w)  { return get(w).mastered; }
+
+  // 틀렸을 때 — 연속정답 리셋
+  function addMiss(word) {
+    const h = get(word);
+    hist[word] = { ...h, totalMiss: h.totalMiss + 1, streak: 0, mastered: false };
+    saveHist();
+  }
+
+  // 맞았을 때 — 연속정답 +1, 기준 충족 시 mastered
+  // requiredStreak: 틀린 이력 없으면 1, 있으면 3
+  function addCorrect(word) {
+    const h = get(word);
+    const required = h.totalMiss > 0 ? 3 : 1;
+    const newStreak = h.streak + 1;
+    const mastered  = newStreak >= required;
+    hist[word] = { ...h, streak: newStreak, mastered };
+    saveHist();
+    return { mastered, streak: newStreak, required };
+  }
+
+  function requiredStreak(word) { return getMiss(word) > 0 ? 3 : 1; }
+
+  // ── 세션 기록 ──
+  function saveSession(data) {
+    sessions.unshift({ ...data, date: new Date().toLocaleDateString('ko') });
+    if (sessions.length > 30) sessions = sessions.slice(0, 30);
+    saveSessions();
+  }
+  function getSessions()  { return sessions; }
+
+  // ── 테마 ──
+  function getTheme()       { return localStorage.getItem(THEME_KEY) || 'dark'; }
+  function setTheme(t)      { localStorage.setItem(THEME_KEY, t); }
+
+  // ── 통계용 ──
+  function getMasteredWords() { return Object.entries(hist).filter(([,v]) => v.mastered).map(([w,v]) => ({word:w,...v})); }
+  function getAllHistory()     { return hist; }
+
+  load();
+  return { getMiss, getStreak, isMastered, addMiss, addCorrect, requiredStreak,
+           saveSession, getSessions, getTheme, setTheme, getMasteredWords, getAllHistory };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: TTS  — 텍스트 음성 변환
+════════════════════════════════════════════════════════ */
+const TTS = (() => {
+  const synth = window.speechSynthesis;
+  let voice = null;
+
+  // 영어 음성 찾기 (로드 후)
+  function findVoice() {
+    const voices = synth.getVoices();
+    voice = voices.find(v => v.lang === 'en-US' && v.localService) ||
+            voices.find(v => v.lang.startsWith('en')) ||
+            voices[0];
+  }
+  if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = findVoice;
+  findVoice();
+
+  function speak(text, onEnd) {
+    if (!synth) return;
+    synth.cancel();
+    const utt  = new SpeechSynthesisUtterance(text);
+    utt.voice  = voice;
+    utt.lang   = 'en-US';
+    utt.rate   = 0.9;
+    utt.pitch  = 1;
+    if (onEnd) utt.onend = onEnd;
+    synth.speak(utt);
+  }
+  function stop() { synth && synth.cancel(); }
+  function isSupported() { return !!synth; }
+
+  return { speak, stop, isSupported };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: SpacedRepetition
+════════════════════════════════════════════════════════ */
+const SpacedRepetition = (() => {
+  const THRESHOLDS = [
+    { misses: 1, delay: 5   },
+    { misses: 2, delay: 20  },
+    { misses: 3, delay: 100 },
+  ];
+  function getDelay(totalMiss) {
+    const m = [...THRESHOLDS].reverse().find(t => totalMiss >= t.misses);
+    return m ? m.delay : 5;
+  }
+  return { getDelay };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: MyDecks
+════════════════════════════════════════════════════════ */
+const MyDecks = (() => {
+  const KEY = 'wc_mydecks';
+  let decks = [];
+  function load() { try { decks = JSON.parse(localStorage.getItem(KEY) || '[]'); } catch { decks=[]; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(decks)); } catch {} }
+  function getAll()      { load(); return decks; }
+  function add(name, words) {
+    load();
+    const i = decks.findIndex(d => d.name === name);
+    const d = { id: Date.now(), name, savedAt: new Date().toLocaleDateString('ko'), words };
+    if (i >= 0) decks[i] = d; else decks.push(d);
+    save(); return d;
+  }
+  function remove(id) { load(); decks = decks.filter(d => d.id !== id); save(); }
+  load();
+  return { getAll, add, remove };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: FileLoader
+════════════════════════════════════════════════════════ */
+const FileLoader = (() => {
+  function parseSheet(ws) {
+    const rows  = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const start = (rows[0] && typeof rows[0][0] === 'string' && rows[0][0].toLowerCase().match(/word|english|단어/)) ? 1 : 0;
+    return rows.slice(start).filter(r => r[0]).map((r, i) => ({
+      id: i, word: String(r[0]).trim(), phonetic: '',
+      meaning: r[1] ? String(r[1]).trim() : '',
+      example: r[2] ? String(r[2]).trim() : '',
+    }));
+  }
+  function loadFile(file, onSuccess, onError) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'binary' });
+        const result = {};
+        wb.SheetNames.filter(n => !n.startsWith('📋')).forEach(n => {
+          const words = parseSheet(wb.Sheets[n]);
+          if (words.length > 0) result[n] = words;
+        });
+        const names = Object.keys(result);
+        if (!names.length) { onError('단어를 찾을 수 없어요 🤔'); return; }
+        onSuccess(file.name.replace(/\.[^.]+$/, ''), result);
+      } catch { onError('파일을 읽을 수 없어요 😅'); }
+    };
+    reader.readAsBinaryString(file);
+  }
+  return { loadFile };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: Deck  — 학습 큐 (연속정답 기반 완료 처리)
+════════════════════════════════════════════════════════ */
+const Deck = (() => {
+  let queue = [], cursor = 0;
+  let stats = { known:0, unknown:0, processed:0, mastered:0 };
+
+  function shuffle(arr) {
+    const a=[...arr];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    return a;
+  }
+  function init(words) {
+    queue  = shuffle(words.map(w => ({ ...w, nextAfter: 0, sessionStreak: 0 })));
+    cursor = 0;
+    stats  = { known:0, unknown:0, processed:0, mastered:0 };
+  }
+  function current() {
+    for (let i=cursor; i<queue.length; i++) { if (queue[i].nextAfter <= stats.processed) { cursor=i; return queue[i]; } }
+    for (let i=0; i<cursor; i++)            { if (queue[i].nextAfter <= stats.processed) { cursor=i; return queue[i]; } }
+    return null;
+  }
+  function markKnown(card) {
+    stats.known++; stats.processed++;
+    const result = Storage.addCorrect(card.word);
+    card.sessionStreak = result.streak;
+    if (result.mastered) {
+      stats.mastered++;
+      card.nextAfter = queue.length + 9999; // 완료
+    } else {
+      // 아직 연속정답 부족 — 5장 후 다시
+      card.nextAfter = stats.processed + 5;
+      const idx = queue.indexOf(card);
+      if (idx !== -1) { queue.splice(idx,1); queue.push(card); }
+    }
+    cursor++; if(cursor>=queue.length) cursor=0;
+    return result;
+  }
+  function markUnknown(card) {
+    stats.unknown++; stats.processed++;
+    Storage.addMiss(card.word);
+    card.sessionStreak = 0;
+    card.nextAfter = stats.processed + SpacedRepetition.getDelay(Storage.getMiss(card.word));
+    const idx = queue.indexOf(card);
+    if (idx !== -1) { queue.splice(idx,1); queue.push(card); }
+    if (cursor >= queue.length) cursor = 0;
+  }
+  function isDone()     { return queue.every(c => c.nextAfter > queue.length+100) || stats.processed >= queue.length*4; }
+  function getStats()   { return { ...stats }; }
+  function getTotal()   { return queue.length; }
+  function getUnknown() { return queue.filter(c => Storage.getMiss(c.word) > 0 && !Storage.isMastered(c.word)); }
+  return { init, current, markKnown, markUnknown, isDone, getStats, getTotal, getUnknown };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: CardUI
+════════════════════════════════════════════════════════ */
+const CardUI = (() => {
+  const THRESHOLD = 90;
+  let drag = { active:false, startX:0, currentX:0 };
+  let onKnown, onUnknown;
+
+  function buildStreakDots(word) {
+    const required = Storage.requiredStreak(word);
+    if (required <= 1) return '';
+    const current = Storage.getStreak(word);
+    const dots = Array.from({length: required}, (_,i) =>
+      `<div class="streak-dot ${i < current ? 'filled' : ''}"></div>`
+    ).join('');
+    return `<div class="streak-bar">${dots}</div>`;
+  }
+
+  function render(card, arena, callbacks) {
+    onKnown = callbacks.onKnown; onUnknown = callbacks.onUnknown;
+    const old = document.getElementById('activeCard');
+    if (old) old.remove();
+    const miss = Storage.getMiss(card.word);
+    const phonetic = card.phonetic || '';
+
+    arena.insertAdjacentHTML('beforeend', `
+      <div class="card-wrapper" id="activeCard">
+        <div class="card-inner" id="cardInner">
+          <div class="card-face card-front">
+            ${miss > 0 ? `<div class="penalty-badge">⚠ ${miss}회 틀림</div>` : ''}
+            <div class="card-badge">WORD</div>
+            <div class="card-word">${card.word}</div>
+            ${phonetic ? `<div class="card-phonetic">${phonetic}</div>` : ''}
+            <div class="card-tap-hint">✦ 탭해서 뜻 보기</div>
+            ${buildStreakDots(card.word)}
+            ${TTS.isSupported() ? `<button class="tts-btn" id="ttsFront" title="발음 듣기">🔊</button>` : ''}
+            <div class="swipe-overlay left-overlay"  id="ol1">✓</div>
+            <div class="swipe-overlay right-overlay" id="or1">✗</div>
+          </div>
+          <div class="card-face card-back">
+            <div class="card-badge">MEANING</div>
+            <div class="card-meaning">${card.meaning || '뜻 없음'}</div>
+            ${card.example ? `<div class="card-example">${card.example}</div>` : ''}
+            <div class="swipe-overlay left-overlay"  id="ol2">✓</div>
+            <div class="swipe-overlay right-overlay" id="or2">✗</div>
+          </div>
+        </div>
+      </div>`);
+
+    const wrapper = document.getElementById('activeCard');
+    attachGestures(wrapper);
+
+    // TTS 버튼
+    const ttsBtn = document.getElementById('ttsFront');
+    if (ttsBtn) {
+      ttsBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        ttsBtn.classList.add('speaking');
+        TTS.speak(card.word, () => ttsBtn.classList.remove('speaking'));
+      });
+    }
+  }
+
+  // 연속정답 후 도트 업데이트 (카드 재등장 시)
+  function updateStreakDots(word) {
+    const bar = document.querySelector('.streak-bar');
+    if (!bar) return;
+    const required = Storage.requiredStreak(word);
+    const current  = Storage.getStreak(word);
+    bar.innerHTML = Array.from({length: required}, (_,i) =>
+      `<div class="streak-dot ${i < current ? 'filled' : ''}"></div>`
+    ).join('');
+  }
+
+  function flip() { const i=document.getElementById('cardInner'); if(i) i.classList.toggle('flipped'); }
+
+  function animateOut(dir, cb) {
+    const w = document.getElementById('activeCard');
+    if (!w) return;
+    TTS.stop();
+    w.classList.add(dir==='left' ? 'animate-left' : 'animate-right');
+    setTimeout(cb, 350);
+  }
+
+  function setOverlays(dx) {
+    const r=Math.min(Math.abs(dx)/100,1), isL=dx<0;
+    ['ol1','ol2'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.opacity=isL?r:0;});
+    ['or1','or2'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.opacity=isL?0:r;});
+    const hL=document.getElementById('hintLeft'), hR=document.getElementById('hintRight');
+    if(hL)hL.style.opacity=isL?r*0.9:0;
+    if(hR)hR.style.opacity=isL?0:r*0.9;
+  }
+  function clearOverlays() {
+    ['ol1','ol2','or1','or2','hintLeft','hintRight'].forEach(id=>{const e=document.getElementById(id);if(e)e.style.opacity=0;});
+  }
+  function attachGestures(wrapper) {
+    wrapper.addEventListener('click', ()=>{ if(Math.abs(drag.currentX-drag.startX)<10) flip(); });
+    const onStart=e=>{drag.active=true;const p=e.touches?e.touches[0]:e;drag.startX=drag.currentX=p.clientX;};
+    const onMove =e=>{
+      if(!drag.active)return; if(e.cancelable)e.preventDefault();
+      const p=e.touches?e.touches[0]:e; drag.currentX=p.clientX;
+      const dx=drag.currentX-drag.startX;
+      wrapper.style.cssText=`transform:translateX(${dx}px) rotate(${dx*0.08}deg);transition:none;`;
+      setOverlays(dx);
+    };
+    const onEnd=()=>{
+      if(!drag.active)return; drag.active=false; clearOverlays();
+      const dx=drag.currentX-drag.startX;
+      if(dx<-THRESHOLD)      animateOut('left',  onKnown);
+      else if(dx>THRESHOLD)  animateOut('right', onUnknown);
+      else { wrapper.style.cssText='transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);'; wrapper.style.transform=''; }
+    };
+    wrapper.addEventListener('touchstart',onStart,{passive:true});
+    wrapper.addEventListener('touchmove', onMove, {passive:false});
+    wrapper.addEventListener('touchend',  onEnd);
+    wrapper.addEventListener('mousedown', onStart);
+    window.addEventListener('mousemove',  onMove);
+    window.addEventListener('mouseup',    onEnd);
+  }
+  return { render, animateOut, updateStreakDots };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: UI
+════════════════════════════════════════════════════════ */
+const UI = (() => {
+  function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+  function updateHeader() {
+    const s=Deck.getStats();
+    document.getElementById('cardIndex').textContent    = s.processed+1;
+    document.getElementById('cardTotal').textContent    = Deck.getTotal();
+    document.getElementById('knownCount').textContent   = s.known;
+    document.getElementById('unknownCount').textContent = s.unknown;
+    document.getElementById('progressFill').style.width = (s.processed/Deck.getTotal()*100)+'%';
+  }
+  function showToast(msg) {
+    const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2500);
+  }
+  function showDone(stats, sessionWords) {
+    document.getElementById('doneKnown').textContent    = stats.known;
+    document.getElementById('doneUnknown').textContent  = stats.unknown;
+    document.getElementById('doneMastered').textContent = stats.mastered;
+    const pct=Math.round(stats.known/(stats.known+stats.unknown)*100)||0;
+    document.getElementById('doneMessage').textContent =
+      pct===100 ? '완벽해요! 🔥' : pct>=80 ? `정답률 ${pct}% 👏` : pct>=50 ? `정답률 ${pct}% 💪` : `계속 연습해요! 정답률 ${pct}% 📚`;
+    showScreen('screen-done');
+  }
+  return { showScreen, updateHeader, showToast, showDone };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: StatsUI  — 통계 화면 렌더링
+════════════════════════════════════════════════════════ */
+const StatsUI = (() => {
+  function render() {
+    const hist = Storage.getAllHistory();
+    const allWords = BuiltinData.getAllWords();
+    const totalWords   = allWords.length;
+    const masteredWords= Storage.getMasteredWords().length;
+    const totalSessions= Storage.getSessions().length;
+
+    // 요약 카드
+    document.getElementById('statsSummary').innerHTML = `
+      <div class="summary-card"><div class="summary-num accent">${totalWords}</div><div class="summary-label">전체 단어</div></div>
+      <div class="summary-card"><div class="summary-num green">${masteredWords}</div><div class="summary-label">완전 마스터</div></div>
+      <div class="summary-card"><div class="summary-num red">${Object.values(hist).filter(h=>h.totalMiss>0&&!h.mastered).length}</div><div class="summary-label">학습 필요</div></div>`;
+
+    // 카테고리별 진행도
+    const catList = document.getElementById('catProgressList');
+    catList.innerHTML = '';
+    BuiltinData.getAll().forEach(cat => {
+      const mastered = cat.words.filter(w => Storage.isMastered(w.word)).length;
+      const pct = Math.round(mastered / cat.words.length * 100);
+      catList.insertAdjacentHTML('beforeend', `
+        <div class="cat-progress-item">
+          <div class="cat-progress-top">
+            <div class="cat-progress-name">${cat.icon} ${cat.name}</div>
+            <div class="cat-progress-pct">${mastered}/${cat.words.length} · ${pct}%</div>
+          </div>
+          <div class="cat-bar"><div class="cat-bar-fill" style="width:${pct}%"></div></div>
+        </div>`);
+    });
+
+    // 최근 세션
+    const sessionList = document.getElementById('sessionList');
+    const sessions = Storage.getSessions();
+    if (!sessions.length) { sessionList.innerHTML = `<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px">아직 학습 기록이 없어요</div>`; return; }
+    sessionList.innerHTML = '';
+    sessions.slice(0,10).forEach(s => {
+      const pct = Math.round(s.known/(s.known+s.unknown)*100)||0;
+      const cls = pct>=80?'good':pct>=50?'mid':'low';
+      sessionList.insertAdjacentHTML('beforeend', `
+        <div class="session-item">
+          <div class="session-date">${s.date} · ${s.deckName||'전체'} (${s.total}개)</div>
+          <div class="session-score ${cls}">${pct}%</div>
+        </div>`);
+    });
+  }
+  return { render };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: MasteredUI  — 완료 단어 목록
+════════════════════════════════════════════════════════ */
+const MasteredUI = (() => {
+  function render(filterWords) {
+    const allWords = filterWords || BuiltinData.getAllWords();
+    const mastered = allWords.filter(w => Storage.isMastered(w.word));
+    const el = document.getElementById('masteredContent');
+
+    if (!mastered.length) {
+      el.innerHTML = `<div class="mastered-empty"><div class="big">🌱</div>아직 완전히 마스터한 단어가 없어요<br><span style="font-size:12px;color:var(--accent)">단어를 3번 연속 맞히면 여기에 나타나요</span></div>`;
+      return;
+    }
+
+    el.innerHTML = `<div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);margin-bottom:12px">${mastered.length}개 완료</div>`;
+    const list = document.createElement('div'); list.className = 'word-list';
+    mastered.forEach(w => {
+      const miss = Storage.getMiss(w.word);
+      const item = document.createElement('div'); item.className = 'word-item';
+      item.innerHTML = `
+        <div class="word-item-left">
+          <div class="word-en">${w.word}</div>
+          <div class="word-ko">${w.meaning}</div>
+        </div>
+        <div class="word-item-right">
+          <span class="mastered-badge">✓ 마스터</span>
+          ${miss > 0 ? `<span class="miss-badge">${miss}회 틀림</span>` : ''}
+        </div>`;
+      item.addEventListener('click', () => showModal(w));
+      list.appendChild(item);
+    });
+    el.appendChild(list);
+  }
+
+  function showModal(w) {
+    document.getElementById('modalWord').textContent    = w.word;
+    document.getElementById('modalPhonetic').textContent= w.phonetic || '';
+    document.getElementById('modalMeaning').textContent = w.meaning;
+    document.getElementById('modalExample').textContent = w.example || '';
+    document.getElementById('wordModal').classList.remove('hidden');
+    document.getElementById('modalTtsBtn').onclick = () => TTS.speak(w.word);
+  }
+
+  return { render, showModal };
+})();
+
+
+/* ════════════════════════════════════════════════════════
+   MODULE: App  — 최상위 컨트롤러
+════════════════════════════════════════════════════════ */
+const App = (() => {
+  let currentWords = [];
+  let currentDeckName = '';
+
+  function startSession(words, deckName) {
+    if (!words?.length) { UI.showToast('단어가 없어요 🤔'); return; }
+    currentWords = words; currentDeckName = deckName || '전체';
+    Deck.init(words);
+    UI.showScreen('screen-study'); UI.updateHeader(); nextCard();
+  }
+
+  function nextCard() {
+    if (Deck.isDone()) {
+      const stats = Deck.getStats();
+      Storage.saveSession({ ...stats, total: Deck.getTotal(), deckName: currentDeckName });
+      UI.showDone(stats);
+      return;
+    }
+    const card = Deck.current();
+    if (!card) { UI.showDone(Deck.getStats()); return; }
+    UI.updateHeader();
+    CardUI.render(card, document.getElementById('cardArena'), {
+      onKnown: () => {
+        const result = Deck.markKnown(card);
+        UI.updateHeader();
+        if (result.mastered) UI.showToast(`🏆 마스터! "${card.word.split(' ')[0]}..."`);
+        else if (result.required > 1) {
+          UI.showToast(`✓ ${result.streak}/${result.required} 연속 정답!`);
+        }
+        setTimeout(nextCard, 50);
+      },
+      onUnknown: () => { Deck.markUnknown(card); UI.updateHeader(); setTimeout(nextCard, 50); },
+    });
+  }
+
+  function renderHome() {
+    const grid = document.getElementById('builtinGrid');
+    grid.innerHTML = '';
+    BuiltinData.getAll().forEach(cat => {
+      const mastered = cat.words.filter(w => Storage.isMastered(w.word)).length;
+      const card = document.createElement('div');
+      card.className = 'cat-card'; card.dataset.color = cat.color;
+      card.innerHTML = `
+        <div class="cat-icon">${cat.icon}</div>
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-meta">
+          <span class="cat-count">${cat.words.length}개</span>
+          ${mastered > 0 ? `<span class="cat-mastered">✓${mastered}</span>` : ''}
+        </div>`;
+      card.addEventListener('click', () => startSession(cat.words, cat.name));
+      grid.appendChild(card);
+    });
+    renderMyDecks();
+  }
+
+  function renderMyDecks() {
+    const list  = document.getElementById('myDeckList');
+    const decks = MyDecks.getAll();
+    list.innerHTML = '';
+    if (!decks.length) {
+      list.innerHTML = `<div class="empty-my">아직 내 단어장이 없어요<br><span>+ 엑셀 파일 추가</span>를 눌러 추가하세요<br><span style="font-size:11px;opacity:0.6">한번 추가하면 폰에 저장돼요 📱</span></div>`;
+      return;
+    }
+    decks.forEach(deck => {
+      const card = document.createElement('div'); card.className = 'my-deck-card';
+      card.innerHTML = `
+        <div class="my-deck-left">
+          <div class="my-deck-icon">📖</div>
+          <div>
+            <div class="my-deck-name">${deck.name}</div>
+            <div class="my-deck-count">${deck.words.length}개 · ${deck.savedAt} 저장</div>
+          </div>
+        </div>
+        <button class="my-deck-del" data-id="${deck.id}">✕</button>`;
+      card.addEventListener('click', e => {
+        if (e.target.closest('.my-deck-del')) return;
+        startSession(deck.words, deck.name);
+      });
+      card.querySelector('.my-deck-del').addEventListener('click', e => {
+        e.stopPropagation();
+        if (confirm(`"${deck.name}" 단어장을 삭제할까요?`)) { MyDecks.remove(deck.id); renderMyDecks(); }
+      });
+      list.appendChild(card);
+    });
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    FileLoader.loadFile(file,
+      (baseName, sheets) => {
+        const names = Object.keys(sheets);
+        names.forEach(n => MyDecks.add(n==='Sheet1' ? baseName : n, sheets[n]));
+        renderMyDecks();
+        UI.showToast(names.length===1 ? `"${names[0]}" 저장됐어요 📱` : `${names.length}개 시트 저장됐어요 📱`);
+        if (names.length === 1) startSession(sheets[names[0]], names[0]);
+      },
+      msg => UI.showToast(msg)
+    );
+  }
+
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('themeBtn').textContent = t === 'dark' ? '🌙' : '☀️';
+    Storage.setTheme(t);
+  }
+
+  function init() {
+    // 저장된 테마 적용
+    applyTheme(Storage.getTheme());
+    renderHome();
+
+    // 파일
+    const fi = document.getElementById('fileInput');
+    fi.addEventListener('change', e => { handleFile(e.target.files[0]); fi.value=''; });
+
+    // 전체 학습
+    document.getElementById('allBuiltinBtn').addEventListener('click', () => startSession(BuiltinData.getAllWords(), '전체'));
+
+    // 테마
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      applyTheme(cur==='dark' ? 'light' : 'dark');
+    });
+
+    // 통계 화면
+    document.getElementById('statsNavBtn').addEventListener('click', () => { StatsUI.render(); UI.showScreen('screen-stats'); });
+    document.getElementById('statsBackBtn').addEventListener('click', () => UI.showScreen('screen-home'));
+
+    // 학습 버튼
+    document.getElementById('knownBtn').addEventListener('click', () => {
+      const card = Deck.current();
+      CardUI.animateOut('left', () => {
+        const result = Deck.markKnown(card); UI.updateHeader();
+        if (result.mastered) UI.showToast(`🏆 마스터! "${card.word.split(' ')[0]}..."`);
+        else if (result.required > 1) UI.showToast(`✓ ${result.streak}/${result.required} 연속 정답!`);
+        setTimeout(nextCard, 50);
+      });
+    });
+    document.getElementById('unknownBtn').addEventListener('click', () => {
+      const card = Deck.current();
+      CardUI.animateOut('right', () => { Deck.markUnknown(card); UI.updateHeader(); setTimeout(nextCard, 50); });
+    });
+
+    // 뒤로가기
+    document.getElementById('backBtn').addEventListener('click', () => {
+      if (confirm('학습을 중단하고 홈으로 돌아갈까요?')) { TTS.stop(); renderHome(); UI.showScreen('screen-home'); }
+    });
+
+    // 완료 화면
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      const unknown = Deck.getUnknown();
+      startSession(unknown.length > 0 ? unknown : currentWords, currentDeckName);
+    });
+    document.getElementById('masteredListBtn').addEventListener('click', () => {
+      MasteredUI.render(currentWords); UI.showScreen('screen-mastered');
+    });
+    document.getElementById('homeBtn').addEventListener('click', () => { renderHome(); UI.showScreen('screen-home'); });
+
+    // 완료 단어 목록 (홈에서도 접근)
+    document.getElementById('masteredBackBtn').addEventListener('click', () => UI.showScreen('screen-home'));
+    document.getElementById('masteredTtsAllBtn').addEventListener('click', () => {
+      const mastered = BuiltinData.getAllWords().filter(w => Storage.isMastered(w.word));
+      if (!mastered.length) { UI.showToast('아직 마스터한 단어가 없어요'); return; }
+      let i = 0;
+      function speakNext() { if (i < mastered.length) { TTS.speak(mastered[i++].word, speakNext); } }
+      speakNext();
+    });
+
+    // 모달 닫기
+    document.getElementById('wordModal').addEventListener('click', e => {
+      if (e.target === document.getElementById('wordModal')) {
+        document.getElementById('wordModal').classList.add('hidden');
+        TTS.stop();
+      }
+    });
+  }
+
+  return { init };
+})();
+
+App.init();
+</script>
+</body>
+</html>
