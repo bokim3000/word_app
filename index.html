@@ -9,11 +9,9 @@
 <meta name="theme-color" content="#0f0f13">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="단어카드">
-<link rel="apple-touch-icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
 
 /* ════════════════════════════════════════════════════════
    DESIGN TOKENS — 다크 / 라이트 모드
@@ -27,7 +25,7 @@
   --radius-card: 24px;
   --radius-btn:  16px;
   --font-mono:   'Space Mono', monospace;
-  --font-body:   'Gowun Dodum', sans-serif;
+  --font-body:   'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
   --transition:  0.25s ease;
 }
 [data-theme="dark"] {
@@ -274,7 +272,7 @@ html, body {
 .card-tap-hint { position:absolute; bottom:52px; font-size:12px; color:var(--muted); opacity:0.55; }
 .card-meaning { font-size: clamp(18px,5.5vw,28px); text-align:center; line-height:1.4; }
 .card-example {
-  margin-top:16px; font-size:12px; color:var(--muted); text-align:center;
+  margin-top:16px; font-size:13px; color:var(--muted); text-align:center;
   line-height:1.6; font-style:italic; padding:10px 14px;
   background: rgba(128,128,128,0.06); border-radius:10px; width:100%;
 }
@@ -423,6 +421,7 @@ html, body {
 .animate-left  { animation: swipeLeft  0.35s ease-in forwards; }
 .animate-right { animation: swipeRight 0.35s ease-in forwards; }
 </style>
+<link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
 
@@ -440,7 +439,7 @@ html, body {
     <p class="home-sub">공부할 카테고리를 선택하세요</p>
     <div class="section-label">기본 제공</div>
     <div class="category-grid" id="builtinGrid"></div>
-    <button class="all-btn" id="allBuiltinBtn">✦ 전체 850개 한번에 학습</button>
+    <button class="all-btn" id="allBuiltinBtn">✦ 전체 기본팩 한번에 학습</button>
     <div class="section-label">내 단어장</div>
     <div class="my-list" id="myDeckList"></div>
     <label class="add-btn">
@@ -541,7 +540,7 @@ html, body {
 ════════════════════════════════════════════════════════ */
 const BuiltinData = (() => {
   const categories = [
-    {
+{
       id:'smalltalk', name:'스몰토크', icon:'💬', color:'purple',
       words:[
         {word:"Nice to meet you.",              phonetic:"/naɪs tə miːt juː/",           meaning:"만나서 반갑습니다.",          example:"Nice to meet you! I've heard a lot about you."},
@@ -568,15 +567,57 @@ const BuiltinData = (() => {
         {word:"I'm still learning English.",   phonetic:"/aɪm stɪl ˈlɜːrnɪŋ ˈɪŋɡlɪʃ/", meaning:"아직 영어 배우는 중이에요.",   example:"Please be patient — I'm still learning English."},
         {word:"I hadn't thought of that.",     phonetic:"/aɪ ˈhædənt θɔːt əv ðæt/",     meaning:"그건 생각 못 했네요.",          example:"I hadn't thought of that before. Good point."},
         {word:"Excuse me, I have to go.",      phonetic:"/ɪkˈskjuːz miː aɪ hæv tə ɡoʊ/",meaning:"실례지만 가봐야 할 것 같아요.", example:"Excuse me, I have to go catch my train."},
-        {word:"What do you recommend?",        phonetic:"/wɒt duː juː ˌrɛkəˈmɛnd/",      meaning:"뭘 추천하시겠어요?",           example:"What do you recommend around here?"},
         {word:"I work in IT.",                 phonetic:"/aɪ wɜːrk ɪn aɪ tiː/",          meaning:"IT 분야에서 일해요.",           example:"I work in IT, mostly software development."},
         {word:"I'm from Korea.",               phonetic:"/aɪm frɒm kəˈrɪə/",             meaning:"저는 한국에서 왔어요.",         example:"I'm from Korea, from Seoul specifically."},
-        {word:"I'm just going to relax.",      phonetic:"/aɪm dʒʌst ˈɡoʊɪŋ tə rɪˈlæks/",meaning:"그냥 쉬려고요.",               example:"I'm just going to relax at home this weekend."},
         {word:"Have you been here before?",    phonetic:"/hæv juː bɪn hɪər bɪˈfɔːr/",   meaning:"여기 전에 와보신 적 있어요?",  example:"Have you been to this restaurant before?"},
         {word:"It's been raining a lot lately.",phonetic:"/ɪts bɪn ˈreɪnɪŋ ə lɒt ˈleɪtli/",meaning:"요즘 비가 많이 오네요.",    example:"It's been raining a lot lately. I hope it clears up."},
+        {word:"How's your day going?",         phonetic:"/haʊz jər deɪ ˈɡoʊɪŋ/",        meaning:"오늘 하루 어떠세요?",          example:"How's your day going so far?"},
+        {word:"Is this your first time here?", phonetic:"/ɪz ðɪs jər fɜːrst taɪm hɪər/",meaning:"여기 처음이세요?",             example:"Is this your first time here in the city?"},
+        {word:"Are you traveling alone?",      phonetic:"/ɑːr juː ˈtrævəlɪŋ əˈloʊn/",   meaning:"혼자 여행 중이세요?",          example:"Are you traveling alone or with someone?"},
+        {word:"How was your trip?",            phonetic:"/haʊ wɒz jər trɪp/",            meaning:"여행은 어땠어요?",             example:"How was your trip here?"},
+        {word:"What do you usually do on weekends?",phonetic:"/wɒt duː juː ˈjuːʒuəli duː/",meaning:"주말엔 보통 뭐 하세요?",    example:"What do you usually do on weekends?"},
+        {word:"Are you here for work or vacation?",phonetic:"/ɑːr juː hɪər fər wɜːrk/",  meaning:"일 때문에 오셨어요, 휴가로?",  example:"Are you here for work or vacation?"},
+        {word:"How long are you staying?",     phonetic:"/haʊ lɒŋ ɑːr juː ˈsteɪɪŋ/",    meaning:"얼마 동안 머무르세요?",        example:"How long are you staying here?"},
+        {word:"It's a beautiful day, isn't it?",phonetic:"/ɪts ə ˈbjuːtɪfəl deɪ ɪzənt ɪt/",meaning:"좋은 날씨죠?",           example:"It's a beautiful day, isn't it?"},
+        {word:"Traffic was crazy today.",      phonetic:"/ˈtræfɪk wɒz ˈkreɪzi təˈdeɪ/",  meaning:"오늘 길이 엄청 막혔어요.",    example:"Traffic was crazy today on the highway."},
+        {word:"Sorry, I didn't catch your name.",phonetic:"/ˈsɒri aɪ ˈdɪdənt kætʃ jər neɪm/",meaning:"성함을 못 들었어요.",     example:"Sorry, I didn't catch your name."},
+        {word:"That makes sense.",             phonetic:"/ðæt meɪks sɛns/",              meaning:"그 말이 맞네요.",              example:"That makes sense."},
+        {word:"I see what you mean.",          phonetic:"/aɪ siː wɒt juː miːn/",          meaning:"무슨 말인지 알겠어요.",        example:"I see what you mean."},
+        {word:"That's good to know.",          phonetic:"/ðæts ɡʊd tə noʊ/",             meaning:"알아두면 좋겠네요.",           example:"That's good to know, thanks."},
+        {word:"I haven't decided yet.",        phonetic:"/aɪ ˈhævənt dɪˈsaɪdɪd jɛt/",   meaning:"아직 결정 못 했어요.",         example:"I haven't decided yet — let me think about it."},
+        {word:"Let me think about it.",        phonetic:"/lɛt miː θɪŋk əˈbaʊt ɪt/",      meaning:"좀 생각해 볼게요.",           example:"Let me think about it for a second."},
+        {word:"Do you have any plans tonight?",phonetic:"/duː juː hæv ˈɛni plænz/",      meaning:"오늘 밤 계획 있으세요?",       example:"Do you have any plans tonight?"},
+        {word:"It's been a long day.",         phonetic:"/ɪts bɪn ə lɒŋ deɪ/",           meaning:"오늘 하루 길었네요.",          example:"It's been a long day — I'm exhausted."},
+        {word:"You have a great sense of humor.",phonetic:"/juː hæv ə ɡreɪt sɛns əv ˈhjuːmər/",meaning:"유머 감각이 좋으시네요.",example:"You have a great sense of humor!"},
+        {word:"I was just about to say that.", phonetic:"/aɪ wɒz dʒʌst əˈbaʊt tə seɪ ðæt/",meaning:"저도 그 말 하려던 참이었어요.",example:"I was just about to say that!"},
+        {word:"See you around.",               phonetic:"/siː juː əˈraʊnd/",              meaning:"또 봬요.",                    example:"See you around. Take care!"},
+        {word:"Take care.",                    phonetic:"/teɪk kɛr/",                     meaning:"몸 조심하세요.",               example:"Goodbye — take care of yourself."},
+        {word:"No way! Really?",               phonetic:"/noʊ weɪ ˈrɪəli/",              meaning:"정말요? 설마요!",              example:"No way! Really? That's amazing."},
+        {word:"What do you recommend around here?",phonetic:"/wɒt duː juː ˌrɛkəˈmɛnd/", meaning:"이 근처에서 뭐가 좋나요?",    example:"What do you recommend around here to eat?"},
+        {word:"I'm just going to relax.",          phonetic:"/aɪm dʒʌst ˈɡoʊɪŋ tə rɪˈlæks/",   meaning:"그냥 쉬려고요.",               example:"I'm just going to relax at the hotel today."},
+        {word:"Did you have a busy day?",          phonetic:"/dɪd juː hæv ə ˈbɪzi deɪ/",        meaning:"오늘 바빴어요?",               example:"Did you have a busy day? You look tired."},
+        {word:"Do you live around here?",          phonetic:"/duː juː lɪv əˈraʊnd hɪər/",       meaning:"이 근처에 사세요?",             example:"Do you live around here, or are you visiting?"},
+        {word:"How do you like it here?",          phonetic:"/haʊ duː juː laɪk ɪt hɪər/",       meaning:"여기 어떠세요?",               example:"How do you like it here so far?"},
+        {word:"Have you tried the food here?",     phonetic:"/hæv juː traɪd ðə fuːd hɪər/",     meaning:"여기 음식 먹어봤어요?",          example:"Have you tried the food here yet? It's amazing."},
+        {word:"What kind of food do you like?",    phonetic:"/wɒt kaɪnd əv fuːd duː juː laɪk/",  meaning:"어떤 음식 좋아하세요?",          example:"What kind of food do you like most — spicy or mild?"},
+        {word:"Do you like coffee or tea?",        phonetic:"/duː juː laɪk ˈkɒfi ɔːr tiː/",      meaning:"커피 좋아하세요, 차 좋아하세요?",example:"Do you like coffee or tea more in the morning?"},
+        {word:"What are you up to today?",         phonetic:"/wɒt ɑːr juː ʌp tə təˈdeɪ/",        meaning:"오늘 뭐 하실 예정이에요?",      example:"What are you up to today? Any plans?"},
+        {word:"What do you think of the weather?", phonetic:"/wɒt duː juː θɪŋk əv ðə ˈwɛðər/",  meaning:"날씨 어떠세요?",               example:"What do you think of the weather today? Lovely, isn't it?"},
+        {word:"It's hotter than I expected.",      phonetic:"/ɪts ˈhɒtər ðæn aɪ ɪkˈspɛktɪd/",   meaning:"생각보다 더 덥네요.",           example:"It's hotter than I expected — I should have brought a hat."},
+        {word:"It's colder than I thought.",       phonetic:"/ɪts ˈkoʊldər ðæn aɪ θɔːt/",        meaning:"생각보다 더 춥네요.",           example:"It's colder than I thought — do you have a spare jacket?"},
+        {word:"I just got here a little while ago.",phonetic:"/aɪ dʒʌst ɡɒt hɪər ə ˈlɪtəl waɪl/",meaning:"저도 방금 전에 도착했어요.",    example:"I just got here a little while ago — still jet-lagged!"},
+        {word:"That's interesting.",               phonetic:"/ðæts ˈɪntrəstɪŋ/",                 meaning:"흥미롭네요.",                  example:"Oh, that's interesting! I didn't know that."},
+        {word:"That sounds good.",                 phonetic:"/ðæt saʊndz ɡʊd/",                  meaning:"좋네요.",                     example:"That sounds good — let's do it!"},
+        {word:"I'm just looking around.",          phonetic:"/aɪm dʒʌst ˈlʊkɪŋ əˈraʊnd/",        meaning:"그냥 둘러보고 있어요.",          example:"I'm just looking around — no rush at all."},
+        {word:"I'm a little tired today.",         phonetic:"/aɪm ə ˈlɪtəl ˈtaɪərd təˈdeɪ/",    meaning:"오늘은 좀 피곤하네요.",          example:"I'm a little tired today — long flight yesterday."},
+        {word:"I'm just taking it easy today.",    phonetic:"/aɪm dʒʌst ˈteɪkɪŋ ɪt ˈiːzi/",      meaning:"오늘은 그냥 쉬고 있어요.",       example:"I'm just taking it easy today — enjoying the city."},
+        {word:"I need some fresh air.",            phonetic:"/aɪ niːd sʌm frɛʃ ɛər/",             meaning:"바람 좀 쐬어야겠어요.",          example:"I need some fresh air — shall we step outside?"},
+        {word:"I love meeting new people.",        phonetic:"/aɪ lʌv ˈmiːtɪŋ njuː ˈpiːpəl/",      meaning:"새 사람 만나는 걸 좋아해요.",   example:"I love meeting new people when I travel."},
+        {word:"That's a good question.",           phonetic:"/ðæts ə ɡʊd ˈkwɛstʃən/",             meaning:"좋은 질문이네요.",              example:"That's a good question — I hadn't thought about it."},
+        {word:"What do you recommend?",            phonetic:"/wɒt duː juː ˌrɛkəˈmɛnd/",             meaning:"뭘 추천하시겠어요?",             example:"What do you recommend? You seem like a local!"}
       ]
     },
-    {
+{
       id:'restaurant', name:'식당·카페', icon:'☕', color:'orange',
       words:[
         {word:"A table for two, please.",          phonetic:"/ə ˈteɪbəl fər tuː pliːz/",           meaning:"두 명 자리 부탁드려요.",       example:"Hi, a table for two, please."},
@@ -609,9 +650,54 @@ const BuiltinData = (() => {
         {word:"We're celebrating tonight.",        phonetic:"/wɪər ˈsɛlɪbreɪtɪŋ təˈnaɪt/",        meaning:"오늘 기념일이에요.",            example:"We're celebrating tonight — our anniversary!"},
         {word:"Compliments to the chef!",          phonetic:"/ˈkɒmplɪmənts tə ðə ʃɛf/",           meaning:"셰프에게 칭찬 전해주세요!",    example:"Please pass this on — compliments to the chef!"},
         {word:"Do you have a reservation?",        phonetic:"/duː juː hæv ə ˌrɛzərˈveɪʃən/",      meaning:"예약하셨나요?",                example:"Do you have a reservation under your name?"},
+        {word:"Could we sit outside?",             phonetic:"/kʊd wiː sɪt ˈaʊtsaɪd/",             meaning:"밖에 앉아도 될까요?",           example:"Could we sit outside? The weather is nice."},
+        {word:"Could I see the drink menu?",       phonetic:"/kʊd aɪ siː ðə drɪŋk ˈmɛnjuː/",     meaning:"음료 메뉴 볼 수 있을까요?",    example:"Could I see the drink menu, please?"},
+        {word:"Can I get some water, please?",     phonetic:"/kæn aɪ ɡɛt sʌm ˈwɔːtər pliːz/",    meaning:"물 좀 주시겠어요?",            example:"Can I get some water, please? Still water is fine."},
+        {word:"I'll have this one.",               phonetic:"/aɪl hæv ðɪs wʌn/",                  meaning:"이걸로 할게요.",               example:"I'll have this one — the pasta looks good."},
+        {word:"Could you make it less spicy?",     phonetic:"/kʊd juː meɪk ɪt lɛs ˈspaɪsi/",     meaning:"덜 맵게 해주실 수 있나요?",    example:"Could you make it less spicy? I have a low tolerance."},
+        {word:"No onions, please.",                phonetic:"/noʊ ˈʌnjənz pliːz/",                meaning:"양파는 빼주세요.",             example:"No onions, please — I don't eat them."},
+        {word:"Can you put the sauce on the side?",phonetic:"/kæn juː pʊt ðə sɔːs ɒn ðə saɪd/",  meaning:"소스는 따로 주실 수 있나요?",  example:"Can you put the sauce on the side?"},
+        {word:"Do you have any vegetarian options?",phonetic:"/duː juː hæv ˈvɛdʒɪˈtɛəriən/",     meaning:"채식 메뉴가 있나요?",           example:"Do you have any vegetarian options on the menu?"},
+        {word:"I can't eat dairy.",                phonetic:"/aɪ kænt iːt ˈdɛri/",                meaning:"유제품을 못 먹어요.",           example:"I can't eat dairy — do you have any dairy-free options?"},
+        {word:"For here or to go?",                phonetic:"/fər hɪər ɔːr tə ɡoʊ/",              meaning:"매장에서 드시나요, 포장이신가요?",example:"For here or to go? We close in 20 minutes."},
+        {word:"Could I have an extra plate?",      phonetic:"/kʊd aɪ hæv ən ˈɛkstrə pleɪt/",     meaning:"접시 하나 더 주실 수 있나요?", example:"Could I have an extra plate for sharing?"},
+        {word:"Could I get a fork instead?",       phonetic:"/kʊd aɪ ɡɛt ə fɔːrk ɪnˈstɛd/",     meaning:"포크로 바꿔 주실 수 있나요?",  example:"Could I get a fork instead of chopsticks?"},
+        {word:"This is a bit too salty.",          phonetic:"/ðɪs ɪz ə bɪt tuː ˈsɔːlti/",         meaning:"이건 조금 짠 것 같아요.",       example:"This is a bit too salty for me — could you remake it?"},
+        {word:"Could you heat this up?",           phonetic:"/kʊd juː hiːt ðɪs ʌp/",              meaning:"이거 다시 데워주실 수 있나요?", example:"Could you heat this up? It's gone cold."},
+        {word:"Can we pay separately?",            phonetic:"/kæn wiː peɪ ˈsɛpərɪtli/",           meaning:"각자 계산할 수 있나요?",        example:"Can we pay separately? Three separate bills please."},
+        {word:"Could I get a receipt?",            phonetic:"/kʊd aɪ ɡɛt ə rɪˈsiːt/",            meaning:"영수증 주시겠어요?",           example:"Could I get a receipt, please? I need it for expense."},
+        {word:"Make it decaf, please.",            phonetic:"/meɪk ɪt ˈdiːkæf pliːz/",            meaning:"디카페인으로 해주세요.",        example:"Make it decaf, please — I'm sensitive to caffeine."},
+        {word:"Can I get an extra shot?",          phonetic:"/kæn aɪ ɡɛt ən ˈɛkstrə ʃɒt/",       meaning:"샷 추가할 수 있나요?",          example:"Can I get an extra shot of espresso in that?"},
+        {word:"Is service included?",              phonetic:"/ɪz ˈsɜːrvɪs ɪnˈkluːdɪd/",          meaning:"서비스 요금 포함인가요?",       example:"Is service included, or should I leave a tip?"},
+        {word:"A table for one, please.",          phonetic:"/ə ˈteɪbəl fər wʌn pliːz/",          meaning:"한 명 자리 부탁합니다.",        example:"A table for one, please — by the window if possible."},
+        {word:"Do you have a window seat?",        phonetic:"/duː juː hæv ə ˈwɪndoʊ siːt/",       meaning:"창가 자리 있나요?",             example:"Do you have a window seat available?"},
+        {word:"Still water or sparkling?",         phonetic:"/stɪl ˈwɔːtər ɔːr ˈspɑːrklɪŋ/",      meaning:"탄산 없는 물인가요, 탄산수인가요?",example:"Still water or sparkling? We have both."},
+        {word:"I'd like the set menu.",            phonetic:"/aɪd laɪk ðə sɛt ˈmɛnjuː/",          meaning:"세트 메뉴로 할게요.",           example:"I'd like the set menu — it includes a drink, right?"},
+        {word:"Can I add fries to that?",          phonetic:"/kæn aɪ æd fraɪz tə ðæt/",            meaning:"감자튀김 추가할 수 있나요?",    example:"Can I add fries to that instead of salad?"},
+        {word:"Is this dish very spicy?",          phonetic:"/ɪz ðɪs dɪʃ ˈvɛri ˈspaɪsi/",          meaning:"이 음식 많이 매운가요?",         example:"Is this dish very spicy? I have a low spice tolerance."},
+        {word:"What's the most popular dish?",     phonetic:"/wɒts ðə moʊst ˈpɒpjʊlər dɪʃ/",       meaning:"가장 인기 있는 메뉴가 뭐예요?",  example:"What's the most popular dish here tonight?"},
+        {word:"Do you have anything without pork?",phonetic:"/duː juː hæv ˈɛniθɪŋ wɪˈðaʊt pɔːrk/", meaning:"돼지고기 없는 메뉴 있나요?",    example:"Do you have anything without pork? I don't eat it."},
+        {word:"Can I get this to go?",             phonetic:"/kæn aɪ ɡɛt ðɪs tə ɡoʊ/",             meaning:"이거 포장할 수 있나요?",         example:"Can I get this to go? I'll eat it at the hotel."},
+        {word:"Could we get some napkins?",        phonetic:"/kʊd wiː ɡɛt sʌm ˈnæpkɪnz/",          meaning:"냅킨 좀 주시겠어요?",           example:"Could we get some napkins? We spilled something."},
+        {word:"Could I have a spoon?",             phonetic:"/kʊd aɪ hæv ə spuːn/",               meaning:"숟가락 하나 주실래요?",          example:"Could I have a spoon? The soup is a bit hard to eat."},
+        {word:"Could I get a refill?",             phonetic:"/kʊd aɪ ɡɛt ə ˈriːfɪl/",             meaning:"리필 가능할까요?",              example:"Could I get a refill on the water?"},
+        {word:"This isn't what I ordered.",        phonetic:"/ðɪs ɪzənt wɒt aɪ ˈɔːrdərd/",         meaning:"제가 주문한 게 아니에요.",       example:"This isn't what I ordered — I asked for the pasta."},
+        {word:"I think there's a mistake.",        phonetic:"/aɪ θɪŋk ðɛrz ə mɪˈsteɪk/",           meaning:"뭔가 잘못된 것 같아요.",         example:"I think there's a mistake with my order."},
+        {word:"Could we get the check, please?",   phonetic:"/kʊd wiː ɡɛt ðə tʃɛk pliːz/",         meaning:"계산서 부탁합니다.",             example:"Could we get the check, please? We're in a hurry."},
+        {word:"Do you take cards?",                phonetic:"/duː juː teɪk kɑːrdz/",               meaning:"카드 되나요?",                 example:"Do you take cards, or cash only?"},
+        {word:"Do you accept cash only?",          phonetic:"/duː juː əkˈsɛpt kæʃ ˈoʊnli/",         meaning:"현금만 받나요?",               example:"Do you accept cash only? I don't have local currency."},
+        {word:"Everything was delicious.",         phonetic:"/ˈɛvriθɪŋ wɒz dɪˈlɪʃəs/",             meaning:"정말 맛있었어요.",              example:"Everything was delicious — we'll definitely come back."},
+        {word:"Thank you for the meal.",           phonetic:"/θæŋk juː fər ðə miːl/",              meaning:"잘 먹었습니다.",               example:"Thank you for the meal — it was wonderful."},
+        {word:"Could I have an iced Americano?",   phonetic:"/kʊd aɪ hæv ən aɪst əˌmɛrɪˈkɑːnoʊ/",  meaning:"아이스 아메리카노 한 잔 주세요.", example:"Could I have an iced Americano? Large, please."},
+        {word:"Can I get this without sugar?",     phonetic:"/kæn aɪ ɡɛt ðɪs wɪˈðaʊt ˈʃʊɡər/",     meaning:"이거 무가당으로 될까요?",        example:"Can I get this without sugar? I'm trying to cut back."},
+        {word:"I'd like it hot.",                  phonetic:"/aɪd laɪk ɪt hɒt/",                   meaning:"따뜻한 걸로 주세요.",           example:"I'd like it hot, please — not iced."},
+        {word:"I'd like it iced.",                 phonetic:"/aɪd laɪk ɪt aɪst/",                  meaning:"차가운 걸로 주세요.",           example:"I'd like it iced — it's too hot today."},
+        {word:"Can I have oat milk instead?",      phonetic:"/kæn aɪ hæv oʊt mɪlk ɪnˈstɛd/",        meaning:"오트밀크로 바꿀 수 있나요?",     example:"Can I have oat milk instead of regular milk?"},
+        {word:"Could you make it takeaway?",       phonetic:"/kʊd juː meɪk ɪt ˈteɪkəˌweɪ/",         meaning:"테이크아웃으로 해주세요.",       example:"Could you make it takeaway? I'll drink it on the go."},
+        {word:"Do we order at the counter?",       phonetic:"/duː wiː ˈɔːrdər æt ðə ˈkaʊntər/",     meaning:"카운터에서 주문하나요?",          example:"Do we order at the counter or does someone come to us?"}
       ]
     },
-    {
+{
       id:'hotel', name:'호텔', icon:'🏨', color:'blue',
       words:[
         {word:"I have a reservation.",             phonetic:"/aɪ hæv ə ˌrɛzərˈveɪʃən/",           meaning:"예약이 있어요.",               example:"Hi, I have a reservation under the name Kim."},
@@ -644,9 +730,44 @@ const BuiltinData = (() => {
         {word:"Is the pool open?",                 phonetic:"/ɪz ðə puːl ˈoʊpən/",                meaning:"수영장 열려 있나요?",           example:"Is the pool open now? What are the hours?"},
         {word:"Can I get a non-smoking room?",     phonetic:"/kæn aɪ ɡɛt ə nɒn ˈsmoʊkɪŋ ruːm/",  meaning:"금연 객실로 바꿔 주시겠어요?",  example:"Can I get a non-smoking room instead?"},
         {word:"Can you recommend a restaurant?",   phonetic:"/kæn juː ˌrɛkəˈmɛnd ə ˈrɛstərɒnt/",  meaning:"식당 추천해 주시겠어요?",       example:"Can you recommend a good restaurant nearby?"},
+        {word:"Could I get another key card?",     phonetic:"/kʊd aɪ ɡɛt əˈnʌðər kiː kɑːrd/",    meaning:"키카드 하나 더 받을 수 있나요?",example:"Could I get another key card for my travel partner?"},
+        {word:"The shower isn't draining.",        phonetic:"/ðə ˈʃaʊər ɪzənt ˈdreɪnɪŋ/",         meaning:"샤워 배수가 안 돼요.",          example:"The shower isn't draining — water is pooling."},
+        {word:"Please don't disturb me.",          phonetic:"/pliːz doʊnt dɪˈstɜːrb miː/",         meaning:"방해하지 말아주세요.",          example:"Please don't disturb me until 10am."},
+        {word:"What's the Wi-Fi password?",        phonetic:"/wɒts ðə ˈwaɪfaɪ ˈpæswɜːrd/",        meaning:"와이파이 비밀번호가 뭐예요?",   example:"What's the Wi-Fi password for the hotel?"},
+        {word:"Do you have a laundry service?",    phonetic:"/duː juː hæv ə ˈlɔːndri ˈsɜːrvɪs/",  meaning:"세탁 서비스 있나요?",           example:"Do you have a laundry service? When will it be ready?"},
+        {word:"Is the front desk open 24 hours?",  phonetic:"/ɪz ðə frʌnt dɛsk ˈoʊpən/",          meaning:"프런트가 24시간 운영되나요?",   example:"Is the front desk open 24 hours in case I need help?"},
+        {word:"Is there an airport shuttle?",      phonetic:"/ɪz ðɛr ən ˈɛərpɔːrt ˈʃʌtəl/",       meaning:"공항 셔틀 있나요?",            example:"Is there an airport shuttle? I have a 6am flight."},
+        {word:"I think I left something in my room.",phonetic:"/aɪ θɪŋk aɪ lɛft ˈsʌmθɪŋ ɪn maɪ ruːm/",meaning:"방에 물건을 두고 온 것 같아요.",example:"I think I left my charger in the room — can someone check?"},
+        {word:"I have a reservation under Kim.",   phonetic:"/aɪ hæv ə ˌrɛzərˈveɪʃən ˈʌndər kɪm/", meaning:"김 이름으로 예약했어요.",        example:"I have a reservation under Kim — checking in for two nights."},
+        {word:"I'd like to check in.",             phonetic:"/aɪd laɪk tə tʃɛk ɪn/",               meaning:"체크인하고 싶습니다.",          example:"I'd like to check in, please — reservation under Kim."},
+        {word:"I'd like to check out.",            phonetic:"/aɪd laɪk tə tʃɛk aʊt/",              meaning:"체크아웃하고 싶습니다.",         example:"I'd like to check out — can you prepare my bill?"},
+        {word:"Could I see your passport?",        phonetic:"/kʊd aɪ siː jər ˈpæspɔːrt/",          meaning:"여권 보여주시겠어요?",           example:"Could I see your passport for the check-in process?"},
+        {word:"Could I have a room with a view?",  phonetic:"/kʊd aɪ hæv ə ruːm wɪð ə vjuː/",      meaning:"전망 좋은 방으로 받을 수 있나요?",example:"Could I have a room with a view of the ocean?"},
+        {word:"Do you have a non-smoking room?",   phonetic:"/duː juː hæv ə nɒn ˈsmoʊkɪŋ ruːm/",   meaning:"금연실 있나요?",               example:"Do you have a non-smoking room available tonight?"},
+        {word:"Is there a late check-out option?", phonetic:"/ɪz ðɛr ə leɪt tʃɛk aʊt ˈɒpʃən/",    meaning:"늦은 체크아웃 가능한가요?",      example:"Is there a late check-out option? My flight is at 4pm."},
+        {word:"Could you hold my luggage?",        phonetic:"/kʊd juː hoʊld maɪ ˈlʌɡɪdʒ/",         meaning:"짐 좀 맡아주실 수 있나요?",     example:"Could you hold my luggage? My room isn't ready yet."},
+        {word:"Could you call a taxi for me?",     phonetic:"/kʊd juː kɔːl ə ˈtæksi fər miː/",     meaning:"택시 불러주실 수 있나요?",       example:"Could you call a taxi for me? I need to get to the station."},
+        {word:"The key card isn't working.",       phonetic:"/ðə kiː kɑːrd ɪzənt ˈwɜːrkɪŋ/",       meaning:"키카드가 작동하지 않아요.",       example:"The key card isn't working — can I get it replaced?"},
+        {word:"The air conditioner isn't working.",phonetic:"/ðə ɛr kənˈdɪʃənər ɪzənt ˈwɜːrkɪŋ/",  meaning:"에어컨이 작동하지 않아요.",       example:"The air conditioner isn't working — it's very hot in my room."},
+        {word:"The room is too cold.",             phonetic:"/ðə ruːm ɪz tuː koʊld/",               meaning:"방이 너무 추워요.",              example:"The room is too cold — can you send up extra blankets?"},
+        {word:"The room is too hot.",              phonetic:"/ðə ruːm ɪz tuː hɒt/",                 meaning:"방이 너무 더워요.",              example:"The room is too hot and the AC isn't working."},
+        {word:"Could someone help with my bags?",  phonetic:"/kʊd ˈsʌmwʌn hɛlp wɪð maɪ bæɡz/",    meaning:"짐 좀 도와주실 수 있나요?",     example:"Could someone help with my bags? I have quite a few."},
+        {word:"Can I get extra towels?",           phonetic:"/kæn aɪ ɡɛt ˈɛkstrə ˈtaʊəlz/",        meaning:"수건 더 받을 수 있나요?",        example:"Can I get extra towels? There's only one in the room."},
+        {word:"Can I get extra pillows?",          phonetic:"/kæn aɪ ɡɛt ˈɛkstrə ˈpɪloʊz/",        meaning:"베개 더 받을 수 있나요?",        example:"Can I get extra pillows? I sleep with two."},
+        {word:"Could I have a blanket?",           phonetic:"/kʊd aɪ hæv ə ˈblæŋkɪt/",             meaning:"담요 하나 주실 수 있나요?",      example:"Could I have a blanket? It gets cold at night."},
+        {word:"Could you clean the room later?",   phonetic:"/kʊd juː kliːn ðə ruːm ˈleɪtər/",     meaning:"방 청소는 나중에 해주세요.",      example:"Could you clean the room later? I need to sleep in."},
+        {word:"Is there Wi-Fi in the room?",       phonetic:"/ɪz ðɛr ˈwaɪfaɪ ɪn ðə ruːm/",         meaning:"방에서 와이파이 되나요?",         example:"Is there Wi-Fi in the room? What's the password?"},
+        {word:"Where is the gym?",                 phonetic:"/wɛr ɪz ðə dʒɪm/",                    meaning:"헬스장은 어디에 있나요?",        example:"Where is the gym? I'd like to work out this morning."},
+        {word:"Can I leave my luggage after check-out?",phonetic:"/kæn aɪ liːv maɪ ˈlʌɡɪdʒ ˈɑːftər tʃɛk aʊt/",meaning:"체크아웃 후에 짐 맡길 수 있나요?",example:"Can I leave my luggage after check-out? My flight is at 8pm."},
+        {word:"Can I pay by card?",                phonetic:"/kæn aɪ peɪ baɪ kɑːrd/",              meaning:"카드로 결제할 수 있나요?",       example:"Can I pay by card, or do you prefer cash?"},
+        {word:"Could I get a receipt, please?",    phonetic:"/kʊd aɪ ɡɛt ə rɪˈsiːt pliːz/",        meaning:"영수증 주시겠어요?",             example:"Could I get a receipt, please? I need it for my company."},
+        {word:"I'd like a wake-up call at 7.",     phonetic:"/aɪd laɪk ə weɪk ʌp kɔːl æt ˈsɛvən/", meaning:"7시에 모닝콜 부탁합니다.",       example:"I'd like a wake-up call at 7 — I have an early flight."},
+        {word:"What floor is my room on?",         phonetic:"/wɒt flɔːr ɪz maɪ ruːm ɒn/",           meaning:"제 방은 몇 층인가요?",           example:"What floor is my room on? I can't find it on the map."},
+        {word:"Could you recommend a nearby restaurant?",phonetic:"/kʊd juː ˌrɛkəˈmɛnd ə ˈnɪərbaɪ ˈrɛstərɒnt/",meaning:"근처 식당 추천해주실 수 있나요?",example:"Could you recommend a nearby restaurant for dinner?"},
+        {word:"Can you store this in the fridge?", phonetic:"/kæn juː stɔːr ðɪs ɪn ðə frɪdʒ/",     meaning:"이거 냉장 보관해주실 수 있나요?", example:"Can you store this in the fridge? It's medication."}
       ]
     },
-    {
+{
       id:'airport', name:'공항', icon:'✈️', color:'green',
       words:[
         {word:"Where is the check-in counter?",    phonetic:"/wɛr ɪz ðə tʃɛk ɪn ˈkaʊntər/",      meaning:"체크인 카운터 어디예요?",       example:"Excuse me, where is the check-in counter for Korean Air?"},
@@ -679,9 +800,59 @@ const BuiltinData = (() => {
         {word:"Is this the right terminal?",       phonetic:"/ɪz ðɪs ðə raɪt ˈtɜːrmɪnəl/",        meaning:"이게 맞는 터미널인가요?",       example:"Excuse me, is this the right terminal for international flights?"},
         {word:"Can I get a transit visa?",         phonetic:"/kæn aɪ ɡɛt ə ˈtrænzɪt ˈviːzə/",     meaning:"통과 비자 받을 수 있나요?",     example:"Do I need a transit visa for a stopover in Tokyo?"},
         {word:"Where are you staying?",            phonetic:"/wɛr ɑːr juː ˈsteɪɪŋ/",              meaning:"어디에 머무실 예정이에요?",     example:"Where are you staying during your visit?"},
+        {word:"Where is the check-in counter?", phonetic:"", meaning:"체크인 카운터가 어디예요?", example:"Where is the check-in counter?"},
+        {word:"Which line should I stand in?", phonetic:"", meaning:"어느 줄에 서야 하나요?", example:"Which line should I stand in?"},
+        {word:"Can I check this bag?", phonetic:"", meaning:"이 가방 부칠 수 있나요?", example:"Can I check this bag?"},
+        {word:"Is this carry-on size okay?", phonetic:"", meaning:"이거 기내 반입 가능한 크기인가요?", example:"Is this carry-on size okay?"},
+        {word:"How many bags can I check?", phonetic:"", meaning:"수하물 몇 개까지 부칠 수 있나요?", example:"How many bags can I check?"},
+        {word:"Do I need to remove my laptop?", phonetic:"", meaning:"노트북 꺼내야 하나요?", example:"Do I need to remove my laptop?"},
+        {word:"Do I need to take off my shoes?", phonetic:"", meaning:"신발 벗어야 하나요?", example:"Do I need to take off my shoes?"},
+        {word:"Where is security?", phonetic:"", meaning:"보안 검색대가 어디예요?", example:"Where is security?"},
+        {word:"Where is immigration?", phonetic:"", meaning:"출입국 심사대가 어디예요?", example:"Where is immigration?"},
+        {word:"May I see your boarding pass?", phonetic:"", meaning:"탑승권 보여주시겠어요?", example:"May I see your boarding pass?"},
+        {word:"Could you help me print my boarding pass?", phonetic:"", meaning:"탑승권 출력 도와주실 수 있나요?", example:"Could you help me print my boarding pass?"},
+        {word:"My flight was delayed.", phonetic:"", meaning:"제 비행기가 지연됐어요.", example:"My flight was delayed."},
+        {word:"My flight was canceled.", phonetic:"", meaning:"제 비행기가 취소됐어요.", example:"My flight was canceled."},
+        {word:"Has boarding started yet?", phonetic:"", meaning:"탑승 시작했나요?", example:"Has boarding started yet?"},
+        {word:"What time does boarding start?", phonetic:"", meaning:"탑승은 몇 시에 시작하나요?", example:"What time does boarding start?"},
+        {word:"Where is gate A12?", phonetic:"", meaning:"A12 게이트가 어디예요?", example:"Where is gate A12?"},
+        {word:"Is this the line for boarding?", phonetic:"", meaning:"이 줄이 탑승 줄인가요?", example:"Is this the line for boarding?"},
+        {word:"I'm in seat 24A.", phonetic:"", meaning:"제 좌석은 24A예요.", example:"I'm in seat 24A."},
+        {word:"Could you help me find my seat?", phonetic:"", meaning:"제 좌석 찾는 것 좀 도와주실 수 있나요?", example:"Could you help me find my seat?"},
+        {word:"Can I put this in the overhead bin?", phonetic:"", meaning:"이거 머리 위 선반에 올려도 되나요?", example:"Can I put this in the overhead bin?"},
+        {word:"Could I change seats?", phonetic:"", meaning:"좌석 바꿀 수 있을까요?", example:"Could I change seats?"},
+        {word:"Could I get an aisle seat?", phonetic:"", meaning:"통로 좌석으로 바꿀 수 있을까요?", example:"Could I get an aisle seat?"},
+        {word:"Could I get a window seat?", phonetic:"", meaning:"창가 좌석으로 바꿀 수 있을까요?", example:"Could I get a window seat?"},
+        {word:"How long is the layover?", phonetic:"", meaning:"경유 시간이 얼마나 되나요?", example:"How long is the layover?"},
+        {word:"Where is the transfer desk?", phonetic:"", meaning:"환승 데스크가 어디예요?", example:"Where is the transfer desk?"},
+        {word:"Where do I pick up my baggage?", phonetic:"", meaning:"수하물은 어디서 찾나요?", example:"Where do I pick up my baggage?"},
+        {word:"My baggage didn't arrive.", phonetic:"", meaning:"제 짐이 안 나왔어요.", example:"My baggage didn't arrive."},
+        {word:"My bag is damaged.", phonetic:"", meaning:"제 가방이 파손됐어요.", example:"My bag is damaged."},
+        {word:"I think my bag is lost.", phonetic:"", meaning:"제 가방을 잃어버린 것 같아요.", example:"I think my bag is lost."},
+        {word:"Where can I report lost baggage?", phonetic:"", meaning:"분실 수하물 신고는 어디서 하나요?", example:"Where can I report lost baggage?"},
+        {word:"I have a connecting flight.", phonetic:"", meaning:"저는 연결편이 있어요.", example:"I have a connecting flight."},
+        {word:"Will I make my connection?", phonetic:"", meaning:"연결편을 탈 수 있을까요?", example:"Will I make my connection?"},
+        {word:"Do I need to go through security again?", phonetic:"", meaning:"보안 검색을 다시 받아야 하나요?", example:"Do I need to go through security again?"},
+        {word:"Where is the restroom?", phonetic:"", meaning:"화장실이 어디예요?", example:"Where is the restroom?"},
+        {word:"Where can I charge my phone?", phonetic:"", meaning:"휴대폰 충전은 어디서 할 수 있나요?", example:"Where can I charge my phone?"},
+        {word:"Is there free Wi-Fi?", phonetic:"", meaning:"무료 와이파이가 있나요?", example:"Is there free Wi-Fi?"},
+        {word:"Could I have a blanket?", phonetic:"", meaning:"담요 하나 받을 수 있을까요?", example:"Could I have a blanket?"},
+        {word:"Could I have some water?", phonetic:"", meaning:"물 좀 주실 수 있나요?", example:"Could I have some water?"},
+        {word:"Could I have an immigration form?", phonetic:"", meaning:"입국 신고서 하나 받을 수 있을까요?", example:"Could I have an immigration form?"},
+        {word:"I'm here for tourism.", phonetic:"", meaning:"관광하러 왔습니다.", example:"I'm here for tourism."},
+        {word:"I'm here on business.", phonetic:"", meaning:"출장으로 왔습니다.", example:"I'm here on business."},
+        {word:"How long will you stay?", phonetic:"", meaning:"얼마 동안 머무를 예정이신가요?", example:"How long will you stay?"},
+        {word:"Where will you be staying?", phonetic:"", meaning:"어디에서 머무를 예정이신가요?", example:"Where will you be staying?"},
+        {word:"I have nothing to declare.", phonetic:"", meaning:"신고할 물품이 없습니다.", example:"I have nothing to declare."},
+        {word:"Is there a shuttle bus?", phonetic:"", meaning:"셔틀버스가 있나요?", example:"Is there a shuttle bus?"},
+        {word:"Where is the taxi stand?", phonetic:"", meaning:"택시 승강장이 어디예요?", example:"Where is the taxi stand?"},
+        {word:"Where can I buy a SIM card?", phonetic:"", meaning:"유심은 어디서 살 수 있나요?", example:"Where can I buy a SIM card?"},
+        {word:"Where can I exchange money?", phonetic:"", meaning:"환전은 어디서 할 수 있나요?", example:"Where can I exchange money?"},
+        {word:"I need help with this form.", phonetic:"", meaning:"이 서류 작성에 도움이 필요해요.", example:"I need help with this form."},
+        {word:"Could you speak more slowly?", phonetic:"", meaning:"좀 더 천천히 말씀해 주시겠어요?", example:"Could you speak more slowly?"}
       ]
     },
-    {
+{
       id:'shopping', name:'쇼핑', icon:'🛍️', color:'pink',
       words:[
         {word:"How much is this?",                 phonetic:"/haʊ mʌtʃ ɪz ðɪs/",                  meaning:"이거 얼마예요?",               example:"Excuse me, how much is this jacket?"},
@@ -714,9 +885,39 @@ const BuiltinData = (() => {
         {word:"Where is the checkout?",            phonetic:"/wɛr ɪz ðə ˈtʃɛkaʊt/",               meaning:"계산대가 어디예요?",            example:"Excuse me, where is the checkout?"},
         {word:"Do you have a bag?",                phonetic:"/duː juː hæv ə bæɡ/",                  meaning:"봉투 있나요?",                 example:"Do you have a bag for this? It's quite heavy."},
         {word:"That's a bit too expensive.",       phonetic:"/ðæts ə bɪt tuː ɪkˈspɛnsɪv/",         meaning:"좀 비싸네요.",                 example:"That's a bit too expensive — do you have anything cheaper?"},
+        {word:"I'm looking for souvenirs.",        phonetic:"/aɪm ˈlʊkɪŋ fər ˈsuːvənɪrz/",         meaning:"기념품을 찾고 있어요.",          example:"I'm looking for souvenirs — where's the best spot?"},
+        {word:"Do you have a tax refund service?", phonetic:"/duː juː hæv ə tæks ˈriːfʌnd ˈsɜːrvɪs/",meaning:"택스리펀드 되나요?",            example:"Do you have a tax refund service? I'm a tourist from Korea."},
+        {word:"Can I use my phone to pay?",        phonetic:"/kæn aɪ juːz maɪ foʊn tə peɪ/",        meaning:"휴대폰 결제 가능한가요?",        example:"Can I use my phone to pay? I have Apple Pay."},
+        {word:"Could you show me how it works?",   phonetic:"/kʊd juː ʃoʊ miː haʊ ɪt wɜːrks/",      meaning:"어떻게 쓰는지 보여주실 수 있나요?",example:"Could you show me how this works before I buy it?"},
+        {word:"The price tag says something different.",phonetic:"/ðə praɪs tæɡ sɛz ˈsʌmθɪŋ ˈdɪfrənt/",meaning:"가격표랑 금액이 달라요.",       example:"The price tag says something different — can you check?"},
+        {word:"I'm just looking, thanks.",         phonetic:"/aɪm dʒʌst ˈlʊkɪŋ θæŋks/",            meaning:"그냥 둘러보고 있어요, 감사합니다.",example:"I'm just looking, thanks — I'll call you if I need help."},
+        {word:"Do you have this in another size?", phonetic:"/duː juː hæv ðɪs ɪn əˈnʌðər saɪz/",   meaning:"이거 다른 사이즈 있나요?",       example:"Do you have this in another size? This one doesn't fit."},
+        {word:"Do you have this in black?",        phonetic:"/duː juː hæv ðɪs ɪn blæk/",            meaning:"이거 검은색 있나요?",            example:"Do you have this in black? I prefer darker colors."},
+        {word:"It's a little too big.",            phonetic:"/ɪts ə ˈlɪtəl tuː bɪɡ/",               meaning:"이건 조금 커요.",               example:"It's a little too big — do you have a medium?"},
+        {word:"It's a little too small.",          phonetic:"/ɪts ə ˈlɪtəl tuː smɔːl/",             meaning:"이건 조금 작아요.",              example:"It's a little too small — could I try the large?"},
+        {word:"Do you have a cheaper one?",        phonetic:"/duː juː hæv ə ˈtʃiːpər wʌn/",          meaning:"더 저렴한 거 있나요?",           example:"Do you have a cheaper one? This is over my budget."},
+        {word:"Do you accept cash?",               phonetic:"/duː juː əkˈsɛpt kæʃ/",                meaning:"현금 받나요?",                 example:"Do you accept cash? I don't have my card with me."},
+        {word:"Could I get a receipt?",            phonetic:"/kʊd aɪ ɡɛt ə rɪˈsiːt/",              meaning:"영수증 주시겠어요?",             example:"Could I get a receipt? I might need to return it."},
+        {word:"Can I return this if it doesn't fit?",phonetic:"/kæn aɪ rɪˈtɜːrn ðɪs ɪf ɪt ˈdʌzənt fɪt/",meaning:"안 맞으면 반품할 수 있나요?",   example:"Can I return this if it doesn't fit when I get home?"},
+        {word:"Where can I get a tax refund?",     phonetic:"/wɛr kæn aɪ ɡɛt ə tæks ˈriːfʌnd/",    meaning:"택스리펀드는 어디서 하나요?",     example:"Where can I get a tax refund? I'm a foreign tourist."},
+        {word:"Can you gift-wrap this?",           phonetic:"/kæn juː ˈɡɪft ræp ðɪs/",              meaning:"이거 선물 포장해 주실 수 있나요?",example:"Can you gift-wrap this? It's for a birthday present."},
+        {word:"Do you sell local products?",       phonetic:"/duː juː sɛl ˈloʊkəl ˈprɒdʌkts/",      meaning:"현지 제품도 파나요?",            example:"Do you sell local products? I'm looking for a souvenir."},
+        {word:"Where can I find batteries?",       phonetic:"/wɛr kæn aɪ faɪnd ˈbætəriz/",          meaning:"건전지는 어디서 찾을 수 있나요?", example:"Where can I find batteries? My remote needs new ones."},
+        {word:"Where is the cashier?",             phonetic:"/wɛr ɪz ðə kæˈʃɪər/",                 meaning:"계산대가 어디예요?",             example:"Where is the cashier? I'm ready to pay."},
+        {word:"Could you check the stock?",        phonetic:"/kʊd juː tʃɛk ðə stɒk/",               meaning:"재고 확인해 주실 수 있나요?",    example:"Could you check the stock? I don't see it on the shelf."},
+        {word:"It's damaged.",                     phonetic:"/ɪts ˈdæmɪdʒd/",                       meaning:"이거 손상됐어요.",              example:"It's damaged — there's a scratch on the front."},
+        {word:"Do you have a larger size?",        phonetic:"/duː juː hæv ə ˈlɑːrdʒər saɪz/",        meaning:"더 큰 사이즈 있나요?",           example:"Do you have a larger size? This is too tight."},
+        {word:"Do you have a smaller size?",       phonetic:"/duː juː hæv ə ˈsmɔːlər saɪz/",         meaning:"더 작은 사이즈 있나요?",          example:"Do you have a smaller size? This is too loose."},
+        {word:"I bought this yesterday.",          phonetic:"/aɪ bɔːt ðɪs ˈjɛstərdeɪ/",             meaning:"이거 어제 샀어요.",              example:"I bought this yesterday and I'd like to return it."},
+        {word:"Could you bag this separately?",    phonetic:"/kʊd juː bæɡ ðɪs ˈsɛpərɪtli/",         meaning:"이건 따로 담아주실 수 있나요?",  example:"Could you bag this separately? It's fragile."},
+        {word:"Is there an outlet nearby?",        phonetic:"/ɪz ðɛr ən ˈaʊtlɛt ˈnɪərbaɪ/",         meaning:"콘센트 근처에 있나요?",          example:"Is there an outlet nearby? My phone is almost dead."},
+        {word:"I'm looking for a charger.",        phonetic:"/aɪm ˈlʊkɪŋ fər ə ˈtʃɑːrdʒər/",        meaning:"충전기를 찾고 있어요.",           example:"I'm looking for a charger — do you sell USB-C cables?"},
+        {word:"Do you have this model?",           phonetic:"/duː juː hæv ðɪs ˈmɒdəl/",             meaning:"이 모델 있나요?",               example:"Do you have this model? I saw it on your website."},
+        {word:"Can I open the box?",               phonetic:"/kæn aɪ ˈoʊpən ðə bɒks/",              meaning:"박스를 열어봐도 되나요?",         example:"Can I open the box to check it before I buy?"},
+        {word:"I need a shopping bag.",            phonetic:"/aɪ niːd ə ˈʃɒpɪŋ bæɡ/",               meaning:"쇼핑백 하나 필요해요.",           example:"I need a shopping bag — do you charge for them?"}
       ]
     },
-    {
+{
       id:'hospital', name:'병원·약국', icon:'🏥', color:'red',
       words:[
         {word:"I need to see a doctor.",              phonetic:"/aɪ niːd tə siː ə ˈdɒktər/",              meaning:"의사를 만나야 해요.",           example:"I need to see a doctor — I'm not feeling well."},
@@ -768,9 +969,29 @@ const BuiltinData = (() => {
         {word:"Is it contagious?",                    phonetic:"/ɪz ɪt kənˈteɪdʒəs/",                   meaning:"전염되나요?",                  example:"Is it contagious? Should I stay away from others?"},
         {word:"I need to fast before the test.",      phonetic:"/aɪ niːd tə fɑːst bɪˈfɔːr ðə tɛst/",    meaning:"검사 전에 금식해야 해요.",       example:"Do I need to fast before the blood test?"},
         {word:"My prescription ran out.",             phonetic:"/maɪ prɪˈskrɪpʃən ræn aʊt/",             meaning:"처방약이 다 떨어졌어요.",        example:"My prescription ran out — can I get a refill?"},
+        {word:"I need antiseptic cream.",             phonetic:"/aɪ niːd ˌæntɪˈsɛptɪk kriːm/",           meaning:"소독 연고가 필요해요.",          example:"I need antiseptic cream and a bandage for this cut."},
+        {word:"I need a bandage.",                    phonetic:"/aɪ niːd ə ˈbændɪdʒ/",                   meaning:"붕대가 필요해요.",              example:"I need a bandage — the wound is still bleeding."},
+        {word:"I think I ate something bad.",         phonetic:"/aɪ θɪŋk aɪ eɪt ˈsʌmθɪŋ bæd/",          meaning:"뭔가 잘못 먹은 것 같아요.",     example:"I think I ate something bad — I've been sick all night."},
+        {word:"I don't feel well.",                  phonetic:"/aɪ doʊnt fiːl wɛl/",                    meaning:"몸이 안 좋아요.",               example:"I don't feel well — I think I need to see a doctor."},
+        {word:"I have a cough.",                     phonetic:"/aɪ hæv ə kɒf/",                         meaning:"기침이 나요.",                  example:"I have a cough that won't go away — do you have medicine?"},
+        {word:"I cut my finger.",                    phonetic:"/aɪ kʌt maɪ ˈfɪŋɡər/",                   meaning:"손가락을 베었어요.",             example:"I cut my finger — do you have antiseptic and a bandage?"},
+        {word:"It started this morning.",            phonetic:"/ɪt ˈstɑːrtɪd ðɪs ˈmɔːrnɪŋ/",            meaning:"오늘 아침부터 그랬어요.",         example:"It started this morning — the pain is getting worse."},
+        {word:"How long have you had these symptoms?",phonetic:"/haʊ lɒŋ hæv juː hæd ðiːz ˈsɪmptəmz/",  meaning:"이 증상이 얼마나 됐나요?",       example:"How long have you had these symptoms? A day, or longer?"},
+        {word:"Do you have any allergies?",          phonetic:"/duː juː hæv ˈɛni ˈælərdʒiz/",            meaning:"알레르기가 있으신가요?",          example:"Do you have any allergies before I prescribe this?"},
+        {word:"Are you taking any medication?",      phonetic:"/ɑːr juː ˈteɪkɪŋ ˈɛni ˌmɛdɪˈkeɪʃən/",   meaning:"복용 중인 약이 있나요?",          example:"Are you taking any medication I should know about?"},
+        {word:"Where is the pharmacy?",              phonetic:"/wɛr ɪz ðə ˈfɑːrməsi/",                  meaning:"약국이 어디예요?",               example:"Where is the pharmacy? I need to fill a prescription."},
+        {word:"How often should I take this?",       phonetic:"/haʊ ˈɒfən ʃʊd aɪ teɪk ðɪs/",            meaning:"이 약은 얼마나 자주 먹어야 하나요?",example:"How often should I take this — once or twice a day?"},
+        {word:"Should I take this before meals?",    phonetic:"/ʃʊd aɪ teɪk ðɪs bɪˈfɔːr miːlz/",        meaning:"이 약은 식전에 먹어야 하나요?",  example:"Should I take this before meals or after?"},
+        {word:"Should I take this after meals?",     phonetic:"/ʃʊd aɪ teɪk ðɪs ˈɑːftər miːlz/",        meaning:"이 약은 식후에 먹어야 하나요?",  example:"Should I take this after meals to protect my stomach?"},
+        {word:"Are there any side effects?",         phonetic:"/ɑːr ðɛr ˈɛni saɪd ɪˈfɛkts/",            meaning:"부작용이 있나요?",               example:"Are there any side effects I should watch out for?"},
+        {word:"Do I need to rest?",                  phonetic:"/duː aɪ niːd tə rɛst/",                   meaning:"쉬어야 하나요?",                example:"Do I need to rest, or can I continue my trip?"},
+        {word:"Can I buy this without a prescription?",phonetic:"/kæn aɪ baɪ ðɪs wɪˈðaʊt ə prɪˈskrɪpʃən/",meaning:"이 약은 처방전 없이 살 수 있나요?",example:"Can I buy this without a prescription here?"},
+        {word:"I need pain relief.",                 phonetic:"/aɪ niːd peɪn rɪˈliːf/",                 meaning:"진통제가 필요해요.",             example:"I need pain relief — do you have ibuprofen or paracetamol?"},
+        {word:"I need something for a cold.",        phonetic:"/aɪ niːd ˈsʌmθɪŋ fər ə koʊld/",           meaning:"감기약이 필요해요.",             example:"I need something for a cold — runny nose and sore throat."},
+        {word:"I need something for diarrhea.",      phonetic:"/aɪ niːd ˈsʌmθɪŋ fər ˌdaɪəˈrɪə/",         meaning:"설사약이 필요해요.",             example:"I need something for diarrhea — it started last night."}
       ]
     },
-    {
+{
       id:'emergency', name:'긴급상황', icon:'🚨', color:'red',
       words:[
         {word:"Help!",                                phonetic:"/hɛlp/",                                  meaning:"도와주세요!",                  example:"Help! Someone call an ambulance!"},
@@ -825,7 +1046,7 @@ const BuiltinData = (() => {
         {word:"Please hurry.",                        phonetic:"/pliːz ˈhʌri/",                           meaning:"서둘러 주세요.",               example:"Please hurry — it's a life or death situation."},
       ]
     },
-    {
+{
       id:'business', name:'비즈니스·회의', icon:'💼', color:'blue',
       words:[
         {word:"Let's get started.",                   phonetic:"/lɛts ɡɛt ˈstɑːrtɪd/",                   meaning:"시작해 볼까요.",               example:"Everyone's here — let's get started."},
@@ -878,10 +1099,60 @@ const BuiltinData = (() => {
         {word:"Can we get a status update?",          phonetic:"/kæn wiː ɡɛt ə ˈsteɪtəs ˈʌpdeɪt/",       meaning:"진행 상황 업데이트 받을 수 있나요?",example:"Can we get a status update on the new feature?"},
         {word:"I'll escalate this issue.",            phonetic:"/aɪl ˈɛskəleɪt ðɪs ˈɪʃuː/",              meaning:"이 문제를 윗선에 보고할게요.",    example:"I'll escalate this issue to the management team."},
         {word:"Let's align on the strategy.",         phonetic:"/lɛts əˈlaɪn ɒn ðə ˈstrætɪdʒi/",         meaning:"전략을 맞춰봐요.",             example:"Let's align on the strategy before we present to the client."},
+        {word:"Let's get started.", phonetic:"", meaning:"시작하죠.", example:"Let's get started."},
+        {word:"Can everyone hear me?", phonetic:"", meaning:"다들 제 목소리 들리시나요?", example:"Can everyone hear me clearly?"},
+        {word:"Could you share your screen?", phonetic:"", meaning:"화면 공유해 주시겠어요?", example:"Could you share your screen?"},
+        {word:"I'll walk you through it.", phonetic:"", meaning:"제가 차근차근 설명드릴게요.", example:"I'll walk you through it."},
+        {word:"Let's go over the agenda.", phonetic:"", meaning:"안건을 살펴보죠.", example:"Let's go over the agenda."},
+        {word:"Do we have any updates?", phonetic:"", meaning:"업데이트 사항이 있나요?", example:"Do we have any updates?"},
+        {word:"Can we move on to the next item?", phonetic:"", meaning:"다음 안건으로 넘어갈까요?", example:"Can we move on to the next item?"},
+        {word:"Let's circle back to that later.", phonetic:"", meaning:"그건 나중에 다시 이야기하죠.", example:"Let's circle back to that later."},
+        {word:"Could you clarify that point?", phonetic:"", meaning:"그 부분을 좀 더 설명해 주시겠어요?", example:"Could you clarify that point?"},
+        {word:"Could you elaborate on that?", phonetic:"", meaning:"그 부분을 좀 더 자세히 말씀해 주시겠어요?", example:"Could you elaborate on that?"},
+        {word:"That's a good point.", phonetic:"", meaning:"좋은 지적입니다.", example:"That's a good point."},
+        {word:"I agree with that.", phonetic:"", meaning:"그 의견에 동의합니다.", example:"I agree with that."},
+        {word:"I see it differently.", phonetic:"", meaning:"저는 조금 다르게 봅니다.", example:"I see it differently."},
+        {word:"What's the deadline?", phonetic:"", meaning:"마감일이 언제인가요?", example:"What's the deadline?"},
+        {word:"Can we extend the deadline?", phonetic:"", meaning:"마감을 연장할 수 있을까요?", example:"Can we extend the deadline?"},
+        {word:"Who's responsible for this?", phonetic:"", meaning:"이건 누가 담당하나요?", example:"Who's responsible for this?"},
+        {word:"I'll take care of it.", phonetic:"", meaning:"제가 처리하겠습니다.", example:"I'll take care of it."},
+        {word:"I'll follow up by email.", phonetic:"", meaning:"이메일로 후속 연락드리겠습니다.", example:"I'll follow up by email."},
+        {word:"Let's schedule another meeting.", phonetic:"", meaning:"회의를 하나 더 잡죠.", example:"Let's schedule another meeting."},
+        {word:"What time works for you?", phonetic:"", meaning:"어떤 시간이 괜찮으세요?", example:"What time works for you?"},
+        {word:"I'm available in the afternoon.", phonetic:"", meaning:"오후에는 가능합니다.", example:"I'm available in the afternoon."},
+        {word:"I'm tied up at that time.", phonetic:"", meaning:"그 시간에는 일정이 있어요.", example:"I'm tied up at that time."},
+        {word:"Could we reschedule?", phonetic:"", meaning:"일정을 다시 잡을 수 있을까요?", example:"Could we reschedule?"},
+        {word:"Please send me the file.", phonetic:"", meaning:"파일 보내주세요.", example:"Please send me the file."},
+        {word:"I didn't receive the attachment.", phonetic:"", meaning:"첨부파일을 받지 못했습니다.", example:"I didn't receive the attachment."},
+        {word:"Could you send it again?", phonetic:"", meaning:"다시 보내주시겠어요?", example:"Could you send it again?"},
+        {word:"Let's keep it simple.", phonetic:"", meaning:"간단하게 갑시다.", example:"Let's keep it simple."},
+        {word:"We need to make a decision today.", phonetic:"", meaning:"오늘 결정을 내려야 합니다.", example:"We need to make a decision today."},
+        {word:"What are our options?", phonetic:"", meaning:"선택지가 뭐가 있죠?", example:"What are our options?"},
+        {word:"Let's compare the pros and cons.", phonetic:"", meaning:"장단점을 비교해 봅시다.", example:"Let's compare the pros and cons."},
+        {word:"The budget is limited.", phonetic:"", meaning:"예산이 제한적입니다.", example:"The budget is limited."},
+        {word:"We're over budget.", phonetic:"", meaning:"예산을 초과했습니다.", example:"We're over budget."},
+        {word:"We need approval first.", phonetic:"", meaning:"먼저 승인이 필요합니다.", example:"We need approval first."},
+        {word:"This is a high priority.", phonetic:"", meaning:"이건 우선순위가 높습니다.", example:"This is a high priority."},
+        {word:"This can wait until next week.", phonetic:"", meaning:"이건 다음 주까지 미뤄도 됩니다.", example:"This can wait until next week."},
+        {word:"Could you review this?", phonetic:"", meaning:"이거 검토해 주시겠어요?", example:"Could you review this?"},
+        {word:"I made a few changes.", phonetic:"", meaning:"몇 가지 수정했습니다.", example:"I made a few changes."},
+        {word:"The latest version is attached.", phonetic:"", meaning:"최신 버전을 첨부했습니다.", example:"The latest version is attached."},
+        {word:"Let's make sure we're aligned.", phonetic:"", meaning:"서로 같은 방향인지 확인합시다.", example:"Let's make sure we're aligned."},
+        {word:"Just to confirm,", phonetic:"", meaning:"확인차 말씀드리면,", example:"Just to confirm,"},
+        {word:"Can you give me a quick update?", phonetic:"", meaning:"짧게 진행 상황 알려주실 수 있나요?", example:"Can you give me a quick update?"},
+        {word:"We're on track.", phonetic:"", meaning:"계획대로 진행 중입니다.", example:"We're on track."},
+        {word:"We're running behind.", phonetic:"", meaning:"일정이 밀리고 있습니다.", example:"We're running behind."},
+        {word:"There are a few issues to resolve.", phonetic:"", meaning:"해결해야 할 문제가 몇 가지 있습니다.", example:"There are a few issues to resolve."},
+        {word:"Let's prioritize the urgent items.", phonetic:"", meaning:"급한 것부터 우선 처리하죠.", example:"Let's prioritize the urgent items."},
+        {word:"Can we wrap this up?", phonetic:"", meaning:"이쯤에서 마무리할까요?", example:"Can we wrap this up?"},
+        {word:"Thanks everyone for your time.", phonetic:"", meaning:"다들 시간 내주셔서 감사합니다.", example:"Thanks everyone for your time."},
+        {word:"I'll send the meeting notes.", phonetic:"", meaning:"회의록 보내드리겠습니다.", example:"I'll send the meeting notes."},
+        {word:"Please let me know if you have questions.", phonetic:"", meaning:"질문 있으시면 알려주세요.", example:"Please let me know if you have questions."},
+        {word:"Let's stay in touch.", phonetic:"", meaning:"계속 연락드리겠습니다.", example:"Let's stay in touch."}
       ]
     },
-    {
-      id:'weather', name:'날씨·일상심화', icon:'🌤️', color:'purple',
+{
+      id:'weather', name:'날씨·일상대화', icon:'🌤️', color:'purple',
       words:[
         {word:"It's scorching hot today.",            phonetic:"/ɪts ˈskɔːrtʃɪŋ hɒt təˈdeɪ/",            meaning:"오늘 엄청 더워요.",            example:"It's scorching hot today — stay hydrated!"},
         {word:"It's freezing cold.",                  phonetic:"/ɪts ˈfriːzɪŋ koʊld/",                   meaning:"엄청 추워요.",                 example:"It's freezing cold outside — wear a heavy coat."},
@@ -933,10 +1204,39 @@ const BuiltinData = (() => {
         {word:"Keep me posted.",                      phonetic:"/kiːp miː ˈpoʊstɪd/",                    meaning:"계속 알려주세요.",             example:"Let me know how the interview goes — keep me posted."},
         {word:"It's worth a shot.",                   phonetic:"/ɪts wɜːrθ ə ʃɒt/",                      meaning:"해볼 만해요.",                 example:"I'm not sure it'll work, but it's worth a shot."},
         {word:"Better safe than sorry.",              phonetic:"/ˈbɛtər seɪf ðæn ˈsɒri/",                meaning:"나중에 후회하는 것보다 낫죠.",   example:"Bring a rain jacket — better safe than sorry."},
+        {word:"It's nice out today.", phonetic:"", meaning:"오늘 날씨 좋네요.", example:"It's nice out today."},
+        {word:"It's freezing outside.", phonetic:"", meaning:"밖이 엄청 추워요.", example:"It's freezing outside."},
+        {word:"It's really humid today.", phonetic:"", meaning:"오늘 정말 습하네요.", example:"It's really humid today."},
+        {word:"It looks like rain.", phonetic:"", meaning:"비 올 것 같네요.", example:"It looks like rain."},
+        {word:"Do you think it'll rain later?", phonetic:"", meaning:"이따 비 올 것 같아요?", example:"Do you think it'll rain later?"},
+        {word:"You might need an umbrella.", phonetic:"", meaning:"우산이 필요할지도 몰라요.", example:"You might need an umbrella."},
+        {word:"The weather changes so fast here.", phonetic:"", meaning:"여긴 날씨가 정말 빨리 바뀌네요.", example:"The weather changes so fast here."},
+        {word:"It's sunny but windy.", phonetic:"", meaning:"맑은데 바람이 불어요.", example:"It's sunny but windy."},
+        {word:"It cooled down a lot.", phonetic:"", meaning:"많이 선선해졌네요.", example:"It cooled down a lot."},
+        {word:"It's supposed to snow tonight.", phonetic:"", meaning:"오늘 밤 눈 온대요.", example:"It's supposed to snow tonight."},
+        {word:"What do you usually do after work?", phonetic:"", meaning:"퇴근 후에 보통 뭐 하세요?", example:"What do you usually do after work?"},
+        {word:"I usually stay home and relax.", phonetic:"", meaning:"보통 집에서 쉬어요.", example:"I usually stay home and relax."},
+        {word:"I'm heading home now.", phonetic:"", meaning:"지금 집에 가는 중이에요.", example:"I'm heading home now."},
+        {word:"I'm on my way.", phonetic:"", meaning:"가는 중이에요.", example:"I'm on my way."},
+        {word:"I'll be there in ten minutes.", phonetic:"", meaning:"10분 안에 도착할게요.", example:"I'll be there in ten minutes."},
+        {word:"I got stuck in traffic.", phonetic:"", meaning:"차가 막혀서 늦었어요.", example:"I got stuck in traffic."},
+        {word:"I overslept this morning.", phonetic:"", meaning:"오늘 아침에 늦잠 잤어요.", example:"I overslept this morning."},
+        {word:"I'm a little busy right now.", phonetic:"", meaning:"지금은 조금 바빠요.", example:"I'm a little busy right now."},
+        {word:"I'm free this weekend.", phonetic:"", meaning:"이번 주말엔 시간 돼요.", example:"I'm free this weekend."},
+        {word:"Do you want to grab coffee later?", phonetic:"", meaning:"나중에 커피 한잔할래요?", example:"Do you want to grab coffee later?"},
+        {word:"Let's meet up sometime.", phonetic:"", meaning:"언제 한번 만나요.", example:"Let's meet up sometime."},
+        {word:"What time should we meet?", phonetic:"", meaning:"몇 시에 만날까요?", example:"What time should we meet?"},
+        {word:"That works for me.", phonetic:"", meaning:"전 괜찮아요.", example:"That works for me."},
+        {word:"I'm running a bit late.", phonetic:"", meaning:"제가 조금 늦고 있어요.", example:"I'm running a bit late."},
+        {word:"No worries.", phonetic:"", meaning:"괜찮아요.", example:"No worries."},
+        {word:"Take your time.", phonetic:"", meaning:"천천히 오세요.", example:"Take your time."},
+        {word:"I need to get going.", phonetic:"", meaning:"이제 가봐야 해요.", example:"I need to get going."},
+        {word:"Let's talk later.", phonetic:"", meaning:"나중에 이야기해요.", example:"Let's talk later."},
+        {word:"Have a good one.", phonetic:"", meaning:"좋은 하루 보내세요.", example:"Have a good one."},
+        {word:"Sleep well.", phonetic:"", meaning:"푹 주무세요.", example:"Sleep well."}
       ]
     },
-
-    {
+{
       id:'phrasal1', name:'구동사 기초1', icon:'📗', color:'green',
       words:[
         {word:"get up", phonetic:"/ɡɛt ʌp/", meaning:"일어나다", example:"I usually get up at 7am on weekdays."},
@@ -971,7 +1271,7 @@ const BuiltinData = (() => {
         {word:"come forward", phonetic:"/kʌm ˈfɔːrwərd/", meaning:"나서다 / 자수하다", example:"Did anyone come forward as a witness?"},
       ]
     },
-    {
+{
       id:'phrasal2', name:'구동사 기초2', icon:'📗', color:'green',
       words:[
         {word:"take off", phonetic:"/teɪk ɒf/", meaning:"이륙하다 / 벗다 / 급성장하다", example:"The plane takes off at noon."},
@@ -1006,7 +1306,7 @@ const BuiltinData = (() => {
         {word:"look around", phonetic:"/lʊk əˈraʊnd/", meaning:"둘러보다", example:"Let\'s look around the market before lunch."},
       ]
     },
-    {
+{
       id:'phrasal3', name:'구동사 중급1', icon:'📘', color:'blue',
       words:[
         {word:"make up", phonetic:"/meɪk ʌp/", meaning:"화해하다 / 구성하다 / 꾸며내다", example:"They fought but made up the next day."},
@@ -1041,7 +1341,7 @@ const BuiltinData = (() => {
         {word:"run for", phonetic:"/rʌn fɔːr/", meaning:"출마하다", example:"She\'s running for city council next year."},
       ]
     },
-    {
+{
       id:'phrasal4', name:'구동사 중급2', icon:'📘', color:'blue',
       words:[
         {word:"turn up", phonetic:"/tɜːrn ʌp/", meaning:"나타나다 / 볼륨을 높이다", example:"He turned up late to the meeting again."},
@@ -1076,7 +1376,7 @@ const BuiltinData = (() => {
         {word:"bring across", phonetic:"/brɪŋ əˈkrɒs/", meaning:"전달하다", example:"The speech brought across a powerful message."},
       ]
     },
-    {
+{
       id:'phrasal5', name:'구동사 중급3', icon:'📘', color:'blue',
       words:[
         {word:"hold on", phonetic:"/hoʊld ɒn/", meaning:"기다리다 / 버티다", example:"Hold on — let me check my calendar."},
@@ -1111,7 +1411,7 @@ const BuiltinData = (() => {
         {word:"set the record straight", phonetic:"/sɛt ðə ˈrɛkərd streɪt/", meaning:"사실을 바로잡다", example:"Let me set the record straight about what happened."},
       ]
     },
-    {
+{
       id:'phrasal6', name:'구동사 고급1', icon:'📙', color:'orange',
       words:[
         {word:"fall apart", phonetic:"/fɔːl əˈpɑːrt/", meaning:"산산조각 나다 / 무너지다", example:"Everything fell apart after he left."},
@@ -1146,7 +1446,7 @@ const BuiltinData = (() => {
         {word:"cut the mustard", phonetic:"/kʌt ðə ˈmʌstərd/", meaning:"기준에 맞다 / 잘 해내다", example:"If he can\'t cut the mustard, we\'ll find someone else."},
       ]
     },
-    {
+{
       id:'phrasal7', name:'구동사 고급2', icon:'📙', color:'orange',
       words:[
         {word:"pick up", phonetic:"/pɪk ʌp/", meaning:"집다 / 태우다 / 배우다 / 나아지다", example:"Can you pick me up at the airport?"},
@@ -1181,7 +1481,7 @@ const BuiltinData = (() => {
         {word:"pull in a crowd", phonetic:"/pʊl ɪn ə kraʊd/", meaning:"관중을 모으다", example:"The concert pulled in a huge crowd."},
       ]
     },
-    {
+{
       id:'phrasal8', name:'구동사 고급3', icon:'📙', color:'orange',
       words:[
         {word:"work out", phonetic:"/wɜːrk aʊt/", meaning:"운동하다 / 해결하다 / 잘 되다", example:"Things will work out in the end."},
@@ -1216,7 +1516,7 @@ const BuiltinData = (() => {
         {word:"stand a chance", phonetic:"/stænd ə tʃɑːns/", meaning:"가능성이 있다", example:"With hard work, you stand a chance of winning."},
       ]
     },
-    {
+{
       id:'phrasal9', name:'구동사 고급4', icon:'📙', color:'orange',
       words:[
         {word:"throw away", phonetic:"/θroʊ əˈweɪ/", meaning:"버리다 / 낭비하다", example:"Don\'t throw away your chance at success."},
@@ -1251,7 +1551,7 @@ const BuiltinData = (() => {
         {word:"zoom in", phonetic:"/zuːm ɪn/", meaning:"확대하다", example:"Zoom in on that detail in the photo."},
       ]
     },
-    {
+{
       id:'phrasal10', name:'구동사 고급5', icon:'📙', color:'orange',
       words:[
         {word:"bite off more than you can chew", phonetic:"/baɪt ɒf mɔːr ðæn juː kæn tʃuː/", meaning:"감당할 수 없는 걸 떠맡다", example:"I think I bit off more than I can chew with this project."},
@@ -1286,6 +1586,286 @@ const BuiltinData = (() => {
         {word:"wrapped around your finger", phonetic:"/ræpt əˈraʊnd jər ˈfɪŋɡər/", meaning:"완전히 사로잡힌", example:"She has him wrapped around her finger."},
       ]
     },
+{
+      id:'phrasal11', name:'구동사 실전1', icon:'🔗', color:'purple',
+      words:[
+        {word:"break down", phonetic:"", meaning:"고장 나다 / 무너지다", example:"My car broke down on the way home."},
+        {word:"break out", phonetic:"", meaning:"발생하다 / 탈출하다", example:"A fire broke out last night."},
+        {word:"break up", phonetic:"", meaning:"헤어지다 / 해산하다", example:"They broke up last month."},
+        {word:"bring up", phonetic:"", meaning:"언급하다 / 키우다", example:"She brought up an important issue."},
+        {word:"call back", phonetic:"", meaning:"다시 전화하다", example:"I'll call you back later."},
+        {word:"call off", phonetic:"", meaning:"취소하다", example:"They called off the meeting."},
+        {word:"calm down", phonetic:"", meaning:"진정하다", example:"Please calm down and listen."},
+        {word:"carry on", phonetic:"", meaning:"계속하다", example:"Please carry on with your work."},
+        {word:"check in", phonetic:"", meaning:"체크인하다", example:"We checked in at the hotel."},
+        {word:"check out", phonetic:"", meaning:"체크아웃하다 / 확인하다", example:"What time do we check out?"},
+        {word:"cheer up", phonetic:"", meaning:"기운 내다", example:"Cheer up. Things will get better."},
+        {word:"clean up", phonetic:"", meaning:"청소하다 / 정리하다", example:"Let's clean up this room."},
+        {word:"come across", phonetic:"", meaning:"우연히 발견하다", example:"I came across an old photo."},
+        {word:"come back", phonetic:"", meaning:"돌아오다", example:"I'll come back tomorrow."},
+        {word:"come from", phonetic:"", meaning:"~에서 오다", example:"This word comes from Latin."},
+        {word:"come in", phonetic:"", meaning:"들어오다", example:"Come in and have a seat."},
+        {word:"come out", phonetic:"", meaning:"나오다 / 공개되다", example:"The new movie comes out Friday."},
+        {word:"come up", phonetic:"", meaning:"생기다 / 나오다", example:"Something important came up."},
+        {word:"cut down on", phonetic:"", meaning:"줄이다", example:"I'm trying to cut down on sugar."},
+        {word:"cut off", phonetic:"", meaning:"끊다 / 차단하다", example:"The call got cut off."},
+        {word:"deal with", phonetic:"", meaning:"처리하다 / 대응하다", example:"I need to deal with this problem."},
+        {word:"do over", phonetic:"", meaning:"다시 하다", example:"Can I do this part over?"},
+        {word:"dress up", phonetic:"", meaning:"차려입다", example:"We dressed up for dinner."},
+        {word:"drop by", phonetic:"", meaning:"잠깐 들르다", example:"Drop by my office later."},
+        {word:"drop off", phonetic:"", meaning:"내려주다 / 깜빡 잠들다", example:"Can you drop me off at the station?"},
+        {word:"eat out", phonetic:"", meaning:"외식하다", example:"We usually eat out on Fridays."},
+        {word:"end up", phonetic:"", meaning:"결국 ~하게 되다", example:"We ended up taking a taxi."},
+        {word:"figure out", phonetic:"", meaning:"이해하다 / 해결하다", example:"I can't figure this out."},
+        {word:"fill in", phonetic:"", meaning:"기입하다 / 대신하다", example:"Please fill in this form."},
+        {word:"fill out", phonetic:"", meaning:"작성하다", example:"Fill out the application form."},
+        {word:"find out", phonetic:"", meaning:"알아내다", example:"I found out the truth."},
+        {word:"get along", phonetic:"", meaning:"잘 지내다", example:"Do you get along with your coworkers?"},
+        {word:"get away", phonetic:"", meaning:"떠나다 / 도망가다", example:"We need to get away for the weekend."},
+        {word:"get back", phonetic:"", meaning:"돌아오다", example:"When did you get back?"},
+        {word:"get by", phonetic:"", meaning:"그럭저럭 해내다", example:"I can get by with basic English."},
+        {word:"get in", phonetic:"", meaning:"들어오다 / 도착하다", example:"What time does the train get in?"},
+        {word:"get off", phonetic:"", meaning:"내리다 / 퇴근하다", example:"I get off work at six."},
+        {word:"get on", phonetic:"", meaning:"타다 / 잘 지내다", example:"Get on the bus quickly."},
+        {word:"get out", phonetic:"", meaning:"나가다 / 나오다", example:"Get out of the car."},
+        {word:"get over", phonetic:"", meaning:"극복하다 / 회복하다", example:"It took time to get over the flu."},
+        {word:"get through", phonetic:"", meaning:"끝내다 / 통과하다", example:"I finally got through the exam."},
+        {word:"get up", phonetic:"", meaning:"일어나다", example:"I get up at seven."},
+        {word:"give away", phonetic:"", meaning:"나눠주다 / 들키게 하다", example:"They gave away free samples."},
+        {word:"give back", phonetic:"", meaning:"돌려주다", example:"Please give me back my book."},
+        {word:"give in", phonetic:"", meaning:"굴복하다", example:"He refused to give in."},
+        {word:"give up", phonetic:"", meaning:"포기하다", example:"Don't give up."},
+        {word:"go ahead", phonetic:"", meaning:"진행하다", example:"Go ahead and start."},
+        {word:"go back", phonetic:"", meaning:"돌아가다", example:"I need to go back home."},
+        {word:"go on", phonetic:"", meaning:"계속되다", example:"Please go on."},
+        {word:"go out", phonetic:"", meaning:"외출하다 / 꺼지다", example:"The lights went out."}
+      ]
+    },
+{
+      id:'phrasal12', name:'구동사 실전2', icon:'🔗', color:'purple',
+      words:[
+        {word:"grow up", phonetic:"", meaning:"자라다", example:"I grew up in Seoul."},
+        {word:"hand in", phonetic:"", meaning:"제출하다", example:"Please hand in your report."},
+        {word:"hand out", phonetic:"", meaning:"나눠주다", example:"The teacher handed out worksheets."},
+        {word:"hang on", phonetic:"", meaning:"기다리다 / 꽉 잡다", example:"Hang on a second."},
+        {word:"hang out", phonetic:"", meaning:"시간을 보내다", example:"We hang out after class."},
+        {word:"hold on", phonetic:"", meaning:"잠깐 기다리다", example:"Hold on, I'll check."},
+        {word:"keep on", phonetic:"", meaning:"계속하다", example:"Keep on practicing."},
+        {word:"keep up", phonetic:"", meaning:"유지하다 / 따라가다", example:"I can't keep up with him."},
+        {word:"leave out", phonetic:"", meaning:"빼다 / 제외하다", example:"You left out an important detail."},
+        {word:"let down", phonetic:"", meaning:"실망시키다", example:"I don't want to let you down."},
+        {word:"look after", phonetic:"", meaning:"돌보다", example:"Can you look after my dog?"},
+        {word:"look around", phonetic:"", meaning:"둘러보다", example:"Let's look around first."},
+        {word:"look for", phonetic:"", meaning:"찾다", example:"I'm looking for my keys."},
+        {word:"look forward to", phonetic:"", meaning:"기대하다", example:"I look forward to meeting you."},
+        {word:"look into", phonetic:"", meaning:"조사하다", example:"We'll look into the issue."},
+        {word:"look out", phonetic:"", meaning:"조심하다", example:"Look out!"},
+        {word:"look over", phonetic:"", meaning:"훑어보다 / 검토하다", example:"Could you look over this email?"},
+        {word:"look up", phonetic:"", meaning:"찾아보다 / 나아지다", example:"Look up the word in a dictionary."},
+        {word:"make up", phonetic:"", meaning:"만들어내다 / 화해하다", example:"They made up after the fight."},
+        {word:"move in", phonetic:"", meaning:"이사 들어오다", example:"We moved in last week."},
+        {word:"move out", phonetic:"", meaning:"이사 나가다", example:"They're moving out tomorrow."},
+        {word:"pass away", phonetic:"", meaning:"돌아가시다", example:"His grandfather passed away."},
+        {word:"pass out", phonetic:"", meaning:"기절하다 / 나눠주다", example:"He passed out from the heat."},
+        {word:"pay back", phonetic:"", meaning:"갚다", example:"I'll pay you back tomorrow."},
+        {word:"pick out", phonetic:"", meaning:"고르다", example:"Can you pick out a color?"},
+        {word:"pick up", phonetic:"", meaning:"집다 / 데리러 가다 / 배우다", example:"I'll pick you up at eight."},
+        {word:"point out", phonetic:"", meaning:"지적하다", example:"She pointed out a mistake."},
+        {word:"put away", phonetic:"", meaning:"치우다 / 저축하다", example:"Put your clothes away."},
+        {word:"put off", phonetic:"", meaning:"미루다", example:"We had to put off the trip."},
+        {word:"put on", phonetic:"", meaning:"입다 / 켜다", example:"Put on your coat."},
+        {word:"put out", phonetic:"", meaning:"끄다 / 내놓다", example:"Please put out the candle."},
+        {word:"put up with", phonetic:"", meaning:"참다", example:"I can't put up with the noise."},
+        {word:"run into", phonetic:"", meaning:"우연히 만나다", example:"I ran into an old friend."},
+        {word:"run out of", phonetic:"", meaning:"다 떨어지다", example:"We ran out of milk."},
+        {word:"set up", phonetic:"", meaning:"설정하다 / 세우다", example:"Can you set up the printer?"},
+        {word:"show up", phonetic:"", meaning:"나타나다", example:"He didn't show up on time."},
+        {word:"shut down", phonetic:"", meaning:"닫다 / 종료하다", example:"The shop shuts down at nine."},
+        {word:"sit down", phonetic:"", meaning:"앉다", example:"Please sit down."},
+        {word:"stand out", phonetic:"", meaning:"눈에 띄다", example:"Her resume really stands out."},
+        {word:"take after", phonetic:"", meaning:"닮다", example:"She takes after her mother."},
+        {word:"take away", phonetic:"", meaning:"치우다 / 포장해 가다", example:"Can you take this away?"},
+        {word:"take back", phonetic:"", meaning:"되돌리다 / 취소하다", example:"I take back what I said."},
+        {word:"take off", phonetic:"", meaning:"벗다 / 이륙하다", example:"The plane took off on time."},
+        {word:"take on", phonetic:"", meaning:"떠맡다", example:"He took on too much work."},
+        {word:"take over", phonetic:"", meaning:"인수하다 / 대신하다", example:"She took over the project."},
+        {word:"think over", phonetic:"", meaning:"곰곰이 생각하다", example:"Let me think it over."},
+        {word:"throw away", phonetic:"", meaning:"버리다", example:"Don't throw it away."},
+        {word:"try on", phonetic:"", meaning:"입어보다", example:"Can I try this on?"},
+        {word:"turn around", phonetic:"", meaning:"돌아서다 / 호전시키다", example:"Please turn around."},
+        {word:"turn down", phonetic:"", meaning:"거절하다 / 줄이다", example:"He turned down the offer."}
+      ]
+    },
+{
+      id:'phrasal13', name:'구동사 실전3', icon:'🔗', color:'purple',
+      words:[
+        {word:"turn off", phonetic:"", meaning:"끄다", example:"Turn off the light."},
+        {word:"turn on", phonetic:"", meaning:"켜다", example:"Turn on the TV."},
+        {word:"turn out", phonetic:"", meaning:"결과적으로 ~이다", example:"It turned out fine."},
+        {word:"wake up", phonetic:"", meaning:"잠에서 깨다", example:"Wake up early tomorrow."},
+        {word:"warm up", phonetic:"", meaning:"몸을 풀다 / 데우다", example:"Let's warm up first."},
+        {word:"watch out", phonetic:"", meaning:"조심하다", example:"Watch out for cars."},
+        {word:"work out", phonetic:"", meaning:"운동하다 / 해결되다", example:"Everything worked out well."},
+        {word:"write down", phonetic:"", meaning:"적다", example:"Write down the address."},
+        {word:"back up", phonetic:"", meaning:"지원하다 / 백업하다", example:"Back up your files regularly."},
+        {word:"blow up", phonetic:"", meaning:"폭발하다 / 화내다", example:"The balloon blew up."},
+        {word:"board up", phonetic:"", meaning:"널빤지로 막다", example:"They boarded up the windows."},
+        {word:"book up", phonetic:"", meaning:"예약이 다 차다", example:"The hotel is booked up."},
+        {word:"bottle up", phonetic:"", meaning:"억누르다", example:"Don't bottle up your feelings."},
+        {word:"branch out", phonetic:"", meaning:"분야를 넓히다", example:"The company branched out overseas."},
+        {word:"brush up on", phonetic:"", meaning:"다시 공부하다", example:"I need to brush up on my English."},
+        {word:"build up", phonetic:"", meaning:"쌓다 / 강화하다", example:"You need to build up stamina."},
+        {word:"bump into", phonetic:"", meaning:"우연히 마주치다", example:"I bumped into my teacher."},
+        {word:"burn out", phonetic:"", meaning:"지치다 / 소진되다", example:"He burned out from stress."},
+        {word:"buy out", phonetic:"", meaning:"매수하다", example:"A big firm bought out the startup."},
+        {word:"carry out", phonetic:"", meaning:"수행하다", example:"We carried out the plan."},
+        {word:"catch up", phonetic:"", meaning:"따라잡다 / 밀린 일 하다", example:"I need to catch up on sleep."},
+        {word:"check out of", phonetic:"", meaning:"체크아웃하다", example:"We checked out of the hotel early."},
+        {word:"chip in", phonetic:"", meaning:"돈을 조금씩 보태다", example:"Let's all chip in for lunch."},
+        {word:"clear up", phonetic:"", meaning:"맑아지다 / 해결되다", example:"The sky cleared up."},
+        {word:"close down", phonetic:"", meaning:"폐업하다", example:"The factory closed down."},
+        {word:"come along", phonetic:"", meaning:"함께 오다 / 진전되다", example:"Would you like to come along?"},
+        {word:"come off", phonetic:"", meaning:"떨어지다 / 성공하다", example:"The handle came off."},
+        {word:"count on", phonetic:"", meaning:"의지하다", example:"You can count on me."},
+        {word:"cross out", phonetic:"", meaning:"줄을 그어 지우다", example:"Cross out the wrong answer."},
+        {word:"cut back", phonetic:"", meaning:"삭감하다", example:"We need to cut back on spending."},
+        {word:"die down", phonetic:"", meaning:"약해지다", example:"The wind died down."},
+        {word:"do without", phonetic:"", meaning:"없이 지내다", example:"I can do without dessert."},
+        {word:"drag on", phonetic:"", meaning:"질질 끌다", example:"The meeting dragged on."},
+        {word:"draw up", phonetic:"", meaning:"작성하다", example:"Please draw up a contract."},
+        {word:"drop out", phonetic:"", meaning:"중퇴하다 / 빠지다", example:"He dropped out of college."},
+        {word:"eat up", phonetic:"", meaning:"다 먹다", example:"Eat up your dinner."},
+        {word:"face up to", phonetic:"", meaning:"직면하다", example:"You need to face up to reality."},
+        {word:"fall apart", phonetic:"", meaning:"망가지다 / 무너지다", example:"My shoes are falling apart."},
+        {word:"fall behind", phonetic:"", meaning:"뒤처지다", example:"I fell behind in class."},
+        {word:"fall for", phonetic:"", meaning:"속다 / 반하다", example:"He fell for the scam."},
+        {word:"fill up", phonetic:"", meaning:"가득 채우다", example:"Fill up the tank."},
+        {word:"freeze up", phonetic:"", meaning:"얼어붙다 / 긴장하다", example:"I froze up during the speech."},
+        {word:"get ahead", phonetic:"", meaning:"앞서 나가다", example:"She works hard to get ahead."},
+        {word:"get around", phonetic:"", meaning:"돌아다니다 / 회피하다", example:"How do you get around the city?"},
+        {word:"get down", phonetic:"", meaning:"우울하게 만들다 / 내리다", example:"Rainy days get me down."},
+        {word:"give out", phonetic:"", meaning:"나눠주다 / 고장 나다", example:"My phone battery gave out."},
+        {word:"go over", phonetic:"", meaning:"검토하다", example:"Let's go over the details."},
+        {word:"go through", phonetic:"", meaning:"겪다 / 검토하다", example:"She went through a lot."},
+        {word:"hand over", phonetic:"", meaning:"넘겨주다", example:"Please hand over your ID."},
+        {word:"hold back", phonetic:"", meaning:"억제하다 / 숨기다", example:"Don't hold back your opinion."}
+      ]
+    },
+{
+      id:'phrasal14', name:'구동사 실전4', icon:'🔗', color:'purple',
+      words:[
+        {word:"join in", phonetic:"", meaning:"참여하다", example:"Come join in the game."},
+        {word:"kick off", phonetic:"", meaning:"시작하다", example:"The event kicks off at noon."},
+        {word:"knock out", phonetic:"", meaning:"기절시키다 / 녹초가 되게 하다", example:"The long trip knocked me out."},
+        {word:"lay off", phonetic:"", meaning:"해고하다", example:"The company laid off workers."},
+        {word:"leave behind", phonetic:"", meaning:"두고 가다", example:"I left my bag behind."},
+        {word:"let in", phonetic:"", meaning:"들여보내다", example:"Please let me in."},
+        {word:"live on", phonetic:"", meaning:"~로 먹고살다", example:"He lives on instant noodles."},
+        {word:"log in", phonetic:"", meaning:"로그인하다", example:"Please log in first."},
+        {word:"log out", phonetic:"", meaning:"로그아웃하다", example:"Don't forget to log out."},
+        {word:"mix up", phonetic:"", meaning:"헷갈리다 / 섞다", example:"I mixed up the dates."},
+        {word:"nod off", phonetic:"", meaning:"꾸벅꾸벅 졸다", example:"I nodded off on the train."},
+        {word:"opt out", phonetic:"", meaning:"빠지기로 하다", example:"She opted out of the plan."},
+        {word:"pay off", phonetic:"", meaning:"성과가 나다 / 갚다", example:"Hard work pays off."},
+        {word:"pull over", phonetic:"", meaning:"차를 세우다", example:"The driver pulled over."},
+        {word:"put back", phonetic:"", meaning:"제자리에 두다", example:"Put the book back."},
+        {word:"read over", phonetic:"", meaning:"읽어보다", example:"Please read over the report."},
+        {word:"ring up", phonetic:"", meaning:"계산하다 / 전화하다", example:"The clerk rang up the order."},
+        {word:"rule out", phonetic:"", meaning:"배제하다", example:"We can't rule out that idea."},
+        {word:"save up", phonetic:"", meaning:"저축하다", example:"I'm saving up for a trip."},
+        {word:"see off", phonetic:"", meaning:"배웅하다", example:"We saw him off at the airport."},
+        {word:"send out", phonetic:"", meaning:"발송하다", example:"We sent out invitations."},
+        {word:"settle down", phonetic:"", meaning:"정착하다 / 진정하다", example:"He settled down in Busan."},
+        {word:"show off", phonetic:"", meaning:"자랑하다", example:"He's always showing off."},
+        {word:"sign up", phonetic:"", meaning:"등록하다", example:"I signed up for the course."},
+        {word:"slow down", phonetic:"", meaning:"속도를 줄이다", example:"Please slow down."},
+        {word:"sort out", phonetic:"", meaning:"정리하다 / 해결하다", example:"We need to sort this out."},
+        {word:"speak up", phonetic:"", meaning:"더 크게 말하다", example:"Could you speak up?"},
+        {word:"speed up", phonetic:"", meaning:"속도를 높이다", example:"We need to speed up production."},
+        {word:"stick to", phonetic:"", meaning:"고수하다", example:"Let's stick to the plan."},
+        {word:"sum up", phonetic:"", meaning:"요약하다", example:"To sum up, we need more time."},
+        {word:"take apart", phonetic:"", meaning:"분해하다", example:"He took the machine apart."},
+        {word:"take in", phonetic:"", meaning:"이해하다 / 받아들이다", example:"I couldn't take in all the information."},
+        {word:"talk over", phonetic:"", meaning:"상의하다", example:"Let's talk it over tonight."},
+        {word:"tear down", phonetic:"", meaning:"허물다", example:"They tore down the old building."},
+        {word:"think ahead", phonetic:"", meaning:"앞을 내다보다", example:"You need to think ahead."},
+        {word:"try out", phonetic:"", meaning:"시험해보다", example:"I'd like to try out this app."},
+        {word:"use up", phonetic:"", meaning:"다 써버리다", example:"We used up all the paper."},
+        {word:"wear out", phonetic:"", meaning:"닳게 하다 / 지치게 하다", example:"These shoes are worn out."},
+        {word:"wind down", phonetic:"", meaning:"긴장을 풀다 / 마무리하다", example:"I like to wind down with music."},
+        {word:"wipe out", phonetic:"", meaning:"전멸시키다 / 없애다", example:"The wave wiped out the sandcastle."},
+        {word:"work on", phonetic:"", meaning:"작업하다", example:"I'm working on a new project."},
+        {word:"zoom in", phonetic:"", meaning:"확대하다", example:"Zoom in on the image."},
+        {word:"zone out", phonetic:"", meaning:"멍 때리다", example:"I zoned out during the lecture."},
+        {word:"ask around", phonetic:"", meaning:"여기저기 물어보다", example:"I'll ask around for a good restaurant."},
+        {word:"catch on", phonetic:"", meaning:"이해하다 / 유행하다", example:"The idea quickly caught on."},
+        {word:"come down with", phonetic:"", meaning:"~에 걸리다", example:"I came down with a cold."},
+        {word:"drop in on", phonetic:"", meaning:"불쑥 들르다", example:"We dropped in on our neighbors."},
+        {word:"move on", phonetic:"", meaning:"넘어가다", example:"Let's move on to the next topic."},
+        {word:"phase out", phonetic:"", meaning:"점차 없애다", example:"They're phasing out old models."},
+        {word:"step down", phonetic:"", meaning:"물러나다", example:"The manager stepped down last week."}
+      ]
+    },
+{
+      id:'transport', name:'교통·길찾기', icon:'🚇', color:'green',
+      words:[
+        {word:"How do I get to the airport?",      phonetic:"/haʊ duː aɪ ɡɛt tə ðə ˈɛərpɔːrt/",   meaning:"공항에 어떻게 가요?",            example:"Excuse me, how do I get to the airport from here?"},
+        {word:"Which bus goes to downtown?",        phonetic:"/wɪtʃ bʌs ɡoʊz tə ˈdaʊntaʊn/",       meaning:"어느 버스가 시내로 가나요?",     example:"Which bus goes to downtown? I need to get to City Hall."},
+        {word:"Where is the nearest subway station?",phonetic:"/wɛr ɪz ðə ˈnɪərɪst ˈsʌbweɪ ˈsteɪʃən/",meaning:"가장 가까운 지하철역이 어디예요?",example:"Where is the nearest subway station?"},
+        {word:"Does this train stop at Central Park?",phonetic:"/dʌz ðɪs treɪn stɒp æt ˈsɛntrəl pɑːrk/",meaning:"이 열차 센트럴파크에 서나요?",  example:"Excuse me, does this train stop at Central Park?"},
+        {word:"Is this seat taken?",               phonetic:"/ɪz ðɪs siːt ˈteɪkən/",              meaning:"이 자리 있나요?",               example:"Excuse me, is this seat taken?"},
+        {word:"How much is the fare?",             phonetic:"/haʊ mʌtʃ ɪz ðə fɛər/",              meaning:"요금이 얼마예요?",              example:"How much is the fare to the city center?"},
+        {word:"One ticket to downtown, please.",   phonetic:"/wʌn ˈtɪkɪt tə ˈdaʊntaʊn pliːz/",    meaning:"시내까지 티켓 한 장 주세요.",    example:"One ticket to downtown, please — single journey."},
+        {word:"Where can I buy a transit card?",   phonetic:"/wɛr kæn aɪ baɪ ə ˈtrænzɪt kɑːrd/",  meaning:"교통카드 어디서 사나요?",        example:"Where can I buy a transit card for the subway?"},
+        {word:"I'm lost.",                         phonetic:"/aɪm lɒst/",                          meaning:"길을 잃었어요.",                example:"I'm lost — can you help me find the museum?"},
+        {word:"Can you show me on the map?",       phonetic:"/kæn juː ʃoʊ miː ɒn ðə mæp/",         meaning:"지도에서 보여주시겠어요?",       example:"I'm confused — can you show me on the map?"},
+        {word:"How far is it from here?",          phonetic:"/haʊ fɑːr ɪz ɪt frɒm hɪər/",          meaning:"여기서 얼마나 멀어요?",          example:"How far is it from here to the nearest café?"},
+        {word:"Is it within walking distance?",    phonetic:"/ɪz ɪt wɪˈðɪn ˈwɔːkɪŋ ˈdɪstəns/",    meaning:"걸어갈 수 있는 거리예요?",       example:"Is it within walking distance or should I take a cab?"},
+        {word:"Turn left at the corner.",          phonetic:"/tɜːrn lɛft æt ðə ˈkɔːrnər/",         meaning:"모퉁이에서 왼쪽으로 도세요.",   example:"Turn left at the corner and the hotel is on your right."},
+        {word:"Go straight ahead.",                phonetic:"/ɡoʊ streɪt əˈhɛd/",                  meaning:"직진하세요.",                  example:"Go straight ahead for two blocks, then turn right."},
+        {word:"I need a taxi.",                    phonetic:"/aɪ niːd ə ˈtæksi/",                  meaning:"택시가 필요해요.",              example:"I need a taxi — can you help me flag one down?"},
+        {word:"Please take me to this address.",   phonetic:"/pliːz teɪk miː tə ðɪs ˈædrɛs/",      meaning:"이 주소로 가주세요.",           example:"Please take me to this address — here it is on my phone."},
+        {word:"How long will it take?",            phonetic:"/haʊ lɒŋ wɪl ɪt teɪk/",              meaning:"얼마나 걸려요?",               example:"How long will it take to get to the airport?"},
+        {word:"Pull over here, please.",           phonetic:"/pʊl ˈoʊvər hɪər pliːz/",             meaning:"여기에 세워주세요.",             example:"Pull over here, please — right in front of the hotel."},
+        {word:"Do you have Uber here?",            phonetic:"/duː juː hæv ˈjuːbər hɪər/",          meaning:"여기 우버 되나요?",              example:"Do you have Uber here, or should I take a taxi?"},
+        {word:"Which platform is it?",             phonetic:"/wɪtʃ ˈplætfɔːrm ɪz ɪt/",             meaning:"몇 번 플랫폼이에요?",            example:"Which platform is it for the train to Oxford?"},
+        {word:"I missed my stop.",                 phonetic:"/aɪ mɪst maɪ stɒp/",                  meaning:"내릴 곳을 지났어요.",            example:"I missed my stop — how do I get back?"},
+        {word:"Does the bus run at night?",        phonetic:"/dʌz ðə bʌs rʌn æt naɪt/",            meaning:"밤에도 버스 운행하나요?",        example:"Does the bus run at night? I'll be late coming back."},
+        {word:"Can I rent a car here?",            phonetic:"/kæn aɪ rɛnt ə kɑːr hɪər/",           meaning:"여기서 차 렌트할 수 있나요?",    example:"Can I rent a car here? I need it for three days."},
+        {word:"Where do I validate my ticket?",    phonetic:"/wɛr duː aɪ ˈvælɪdeɪt maɪ ˈtɪkɪt/",  meaning:"티켓은 어디서 개찰해요?",       example:"Where do I validate my ticket before boarding?"},
+        {word:"Is the last train at midnight?",    phonetic:"/ɪz ðə lɑːst treɪn æt ˈmɪdnaɪt/",    meaning:"막차가 자정인가요?",             example:"Is the last train at midnight? I want to make sure I catch it."}
+      ]
+    },
+{
+      id:'phonecall', name:'전화·예약', icon:'📞', color:'purple',
+      words:[
+        {word:"Hello, this is Kim speaking.",      phonetic:"/həˈloʊ ðɪs ɪz kɪm ˈspiːkɪŋ/",        meaning:"안녕하세요, 김입니다.",         example:"Hello, this is Kim speaking — am I through to the hotel?"},
+        {word:"I'd like to make a reservation.",   phonetic:"/aɪd laɪk tə meɪk ə ˌrɛzərˈveɪʃən/",  meaning:"예약을 하고 싶어요.",           example:"Hi, I'd like to make a reservation for Saturday evening."},
+        {word:"For how many people?",              phonetic:"/fər haʊ ˈmɛni ˈpiːpəl/",              meaning:"몇 명이세요?",                 example:"For how many people? And what time were you thinking?"},
+        {word:"Do you have availability?",         phonetic:"/duː juː hæv əˌveɪləˈbɪlɪti/",         meaning:"자리 있나요?",                 example:"Do you have availability for two people this Friday?"},
+        {word:"I'd like to confirm my reservation.",phonetic:"/aɪd laɪk tə kənˈfɜːrm maɪ ˌrɛzərˈveɪʃən/",meaning:"예약을 확인하고 싶어요.",   example:"I'd like to confirm my reservation for tonight, please."},
+        {word:"I'd like to cancel my reservation.",phonetic:"/aɪd laɪk tə ˈkænsəl maɪ ˌrɛzərˈveɪʃən/",meaning:"예약을 취소하고 싶어요.",    example:"I'd like to cancel my reservation — something came up."},
+        {word:"Can I speak to the manager?",       phonetic:"/kæn aɪ spiːk tə ðə ˈmænɪdʒər/",      meaning:"매니저랑 얘기할 수 있나요?",    example:"Can I speak to the manager? I have a complaint."},
+        {word:"Could you put me on hold?",         phonetic:"/kʊd juː pʊt miː ɒn hoʊld/",           meaning:"잠깐 기다려 주시겠어요?",       example:"Could you put me on hold for a moment?"},
+        {word:"I'll call back later.",             phonetic:"/aɪl kɔːl bæk ˈleɪtər/",              meaning:"나중에 다시 전화할게요.",        example:"The line's busy — I'll call back later."},
+        {word:"Could you speak more slowly?",      phonetic:"/kʊd juː spiːk mɔːr ˈsloʊli/",         meaning:"좀 더 천천히 말씀해 주시겠어요?",example:"Could you speak more slowly? My English isn't perfect."},
+        {word:"What are your opening hours?",      phonetic:"/wɒt ɑːr jər ˈoʊpənɪŋ aʊərz/",         meaning:"영업 시간이 어떻게 되나요?",    example:"What are your opening hours on weekends?"},
+        {word:"Is there a reservation fee?",       phonetic:"/ɪz ðɛr ə ˌrɛzərˈveɪʃən fiː/",         meaning:"예약금이 있나요?",              example:"Is there a reservation fee, or is it free to book?"},
+        {word:"I have a complaint.",               phonetic:"/aɪ hæv ə kəmˈpleɪnt/",               meaning:"불만 사항이 있어요.",           example:"I have a complaint about my room — can you help?"},
+        {word:"I ordered this two days ago.",      phonetic:"/aɪ ˈɔːrdərd ðɪs tuː deɪz əˈɡoʊ/",    meaning:"이틀 전에 주문했어요.",          example:"I ordered this two days ago and it still hasn't arrived."},
+        {word:"My order hasn't arrived.",          phonetic:"/maɪ ˈɔːrdər ˈhæzənt əˈraɪvd/",        meaning:"주문이 아직 안 왔어요.",         example:"My order hasn't arrived — can you check the status?"},
+        {word:"I'd like a refund.",                phonetic:"/aɪd laɪk ə ˈriːfʌnd/",               meaning:"환불을 원해요.",               example:"I'd like a refund — the product was damaged."},
+        {word:"Can you transfer me?",              phonetic:"/kæn juː ˈtrænsfɜːr miː/",             meaning:"연결해 주시겠어요?",            example:"Can you transfer me to the reservations department?"},
+        {word:"The line is bad.",                  phonetic:"/ðə laɪn ɪz bæd/",                    meaning:"통화 상태가 안 좋아요.",         example:"The line is bad — could you repeat that?"},
+        {word:"Sorry, I called the wrong number.", phonetic:"/ˈsɒri aɪ kɔːld ðə rɒŋ ˈnʌmbər/",     meaning:"잘못 거셨어요, 죄송해요.",       example:"Sorry, I called the wrong number — my mistake."},
+        {word:"Is this the right number for bookings?",phonetic:"/ɪz ðɪs ðə raɪt ˈnʌmbər fər ˈbʊkɪŋz/",meaning:"예약 전화번호가 맞나요?",      example:"Is this the right number for making hotel bookings?"},
+        {word:"What's the best way to get there?",phonetic:"/wɒts ðə bɛst weɪ tə ɡɛt ðɛər/",       meaning:"어떻게 가는 게 제일 좋아요?",   example:"What's the best way to get there from the airport?"},
+        {word:"I need to change my appointment.",  phonetic:"/aɪ niːd tə tʃeɪndʒ maɪ əˈpɔɪntmənt/", meaning:"예약 시간을 변경해야 해요.",      example:"I need to change my appointment — can we do Thursday instead?"},
+        {word:"Is there a waiting list?",          phonetic:"/ɪz ðɛr ə ˈweɪtɪŋ lɪst/",             meaning:"대기 명단 있나요?",              example:"You're fully booked? Is there a waiting list?"},
+        {word:"Can I leave a message?",            phonetic:"/kæn aɪ liːv ə ˈmɛsɪdʒ/",             meaning:"메시지 남겨도 될까요?",          example:"She's not available — can I leave a message for her?"},
+        {word:"Please call me back at this number.",phonetic:"/pliːz kɔːl miː bæk æt ðɪs ˈnʌmbər/", meaning:"이 번호로 다시 전화해 주세요.",  example:"Please call me back at this number — it's my Korean SIM."}
+      ]
+    }
   ];
 
   function getAll()     { return categories; }
@@ -1835,6 +2415,7 @@ const App = (() => {
       grid.appendChild(card);
     });
     renderMyDecks();
+    document.getElementById('allBuiltinBtn').textContent = `✦ 전체 기본팩 ${BuiltinData.getAllWords().length}개 한번에 학습`;
   }
 
   function renderMyDecks() {
@@ -1966,11 +2547,9 @@ App.init();
 </script>
 
 <script>
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function () {
-    navigator.serviceWorker.register("./service-worker.js").catch(function (err) {
-      console.error("Service worker registration failed:", err);
-    });
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js').catch(err => console.error('SW registration failed:', err));
   });
 }
 </script>
